@@ -20,3 +20,7 @@
 | Auto-Update umstellen | Aus / Stable an Plug M #2, Kontrolle in der Weboberfläche | Build 8 | ok (16.11., Weboberfläche zeigt die Einstellung) |
 | Push-Nachricht | Kachel-Visualisierung wählen, übernehmen, „Test-Nachricht senden“ – kommt sie auf dem Handy an? | Build 9 | offen |
 | Folge-Updates | Gerät mit Zwischenversion: läuft es nach dem ersten Update von selbst weiter („Folge-Update“ im Status)? | Build 9, beim nächsten solchen Update | offen |
+| Suche in weiteren Netzen | Unter „Geräte verwalten“ einen Bereich eintragen (z. B. das eigene Netz .1–.254), übernehmen, suchen – Dauer? Funde wie bei der normalen Suche? | Build 11 | offen |
+| Batteriegerät | Haken „Batterie“ setzen – Status „Schläft“, nicht rot | Build 11 | offen |
+| Update-Verlauf | nach dem nächsten Update: Eintrag im Abschnitt „Update-Verlauf“ | Build 11 | offen |
+| Befehl aus der Visu | Freigabe setzen, Variable „Befehl“ in der Kachel-Visu: wird sie als Auswahl gezeigt, löst sie aus? Auch in der App ansehen | Build 11 | offen |

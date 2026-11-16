@@ -2,6 +2,14 @@
 
 ## Version 1.0
 
+### Build 11 (16.11.2026)
+
+#### Neu
+- Suche in weiteren Netzen: Liste „Weitere Netze durchsuchen“ unter „Geräte verwalten“ (Von / Bis / Bezeichnung, höchstens 1024 Adressen je Zeile). „Geräte im Netzwerk suchen“ durchsucht damit zusätzlich diese Adressbereiche.
+- Batteriegeräte: Haken „Batterie“ je Gerät – Anzeige „Schläft“ statt „Nicht erreichbar“, zählt nicht als Fehler.
+- Update-Verlauf: die letzten 50 Versionswechsel im Formular, auch solche, die das Gerät selbst oder die Weboberfläche ausgelöst hat. Für Skripte: `SFW_GetHistory`.
+- Bedienung aus der Visualisierung: Variable „Befehl“ (Jetzt prüfen / Alle Updates starten), nur mit Freigabe im Formular.
+
 ### Build 10 (16.11.2026)
 
 #### Geändert

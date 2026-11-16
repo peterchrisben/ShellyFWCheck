@@ -2,7 +2,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 10)
+Aktuelle Version: 1.0 (Build 11)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -20,6 +20,10 @@ Aktuelle Version: 1.0 (Build 10)
 4. **Änderungen übernehmen**. Kurz danach stehen Name, Modell, installierte und verfügbare Version unten in der **Übersicht**.
 
 Solange kein Gerät eingetragen ist, zeigt Symcon „Instanz ist inaktiv“ – das ist normal.
+
+**Shellys in einem anderen Netz** (Gäste-, IoT-Netz, Gartenhaus): Die normale Suche findet nur Geräte im Netz von Symcon. Unter „Geräte verwalten“ lassen sich bei „Weitere Netze durchsuchen“ zusätzliche Adressbereiche eintragen, z. B. Von `192.168.20.1`, Bis `192.168.20.254`. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht; auch die Kurzform `192.168.20.0/24` geht. Höchstens 1024 Adressen je Zeile. Symcon muss das andere Netz erreichen können. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.
+
+**Batteriegeräte:** Haken „Batterie“ in der Geräteliste setzen. Das Gerät wird dann als „Schläft“ gezeigt statt als Fehler und zählt nicht bei „Nicht erreichbar“ mit.
 
 Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zeile den Haken **Eigenes PW** setzen und das Passwort dort eintragen. Der Benutzername ist bei Shelly immer „admin“.
 
@@ -44,6 +48,10 @@ Umstellen: Haken bei den Geräten setzen und in der Zeile „Auto-Update im Ger�
 
 **Push-Nachricht:** Unter „Prüfung, Nachricht und Anzeige“ lässt sich eine Kachel-Visualisierung auswählen. Findet eine Prüfung ein neues Update, bekommt sie eine Nachricht („Update verfügbar: Name (Version)“), je Update nur einmal. Ohne Auswahl gibt es keine Nachricht. Mit „Test-Nachricht senden“ lässt sich das ausprobieren.
 
+**Update-Verlauf:** Ganz unten im Formular stehen die letzten 50 Versionswechsel mit Zeitpunkt, Gerät, alter und neuer Version und Auslöser (Modul, Folge-Update oder „Gerät selbst / von außen“ für Auto-Update, Weboberfläche und App).
+
+**Bedienung aus der Visualisierung:** Mit dem Haken „Bedienung aus der Visualisierung freigeben“ unter „Updates“ legt das Modul die Variable „Befehl“ an (Jetzt prüfen / Alle Updates starten). Ohne Freigabe gibt es die Variable nicht. Achtung: „Alle Updates starten“ läuft aus der Visualisierung ohne Rückfrage.
+
 Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot).
 
 Batteriegeräte schlafen meist und zeigen dann „Nicht erreichbar“. Wer sie nicht in der Übersicht haben möchte, nimmt den Haken **Aktiv** heraus.
@@ -58,6 +66,7 @@ Batteriegeräte schlafen meist und zeigen dann „Nicht erreichbar“. Wer sie n
 | Geräte mit Update | Namen der Geräte mit Update, durch Komma getrennt |
 | Letzte Prüfung | Zeitpunkt der letzten Abfrage |
 | Übersicht | Tabelle aller Geräte für die Visualisierung (abschaltbar) |
+| Befehl | nur mit Freigabe: Jetzt prüfen / Alle Updates starten |
 
 ## Befehle für Skripte
 
@@ -69,6 +78,7 @@ SFW_UpdateAll($id);                     // alle verfügbaren Updates nacheinande
 SFW_Discover($id);                      // Gerätesuche (trägt nur ins offene Formular ein)
 SFW_SetAutoUpdate($id, '["192.168.1.50"]', 'stable'); // Auto-Update im Gerät: 'off', 'stable' oder 'beta'
 SFW_GetDevices($id);                    // Stand aller Geräte als JSON
+SFW_GetHistory($id);                    // Update-Verlauf als JSON (neueste zuerst)
 ```
 
 ## Hinweise

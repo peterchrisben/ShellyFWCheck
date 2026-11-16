@@ -16,6 +16,8 @@ class ShellyFWCheck extends IPSModule
     private const VERIFY_MAX = 900;         // so lange (Sekunden) wird auf die neue Version gewartet
     private const MAX_STEPS = 4;            // höchstens so viele Anstöße je Update (mehrstufige Updates)
     private const MAX_CHAIN = 5;            // höchstens so viele Folge-Updates hintereinander
+    private const SCAN_MAX = 1024;          // höchstens so viele Adressen je Suchbereich
+    private const HISTORY_MAX = 50;         // so viele Einträge behält der Update-Verlauf
 
     public function Create()
     {
@@ -27,6 +29,9 @@ class ShellyFWCheck extends IPSModule
         $this->RegisterPropertyBoolean('ShowTable', true);
         $this->RegisterPropertyBoolean('ContinueUpdates', true);
         $this->RegisterPropertyInteger('NotifyVisu', 0);
+        $this->RegisterPropertyString('ScanRanges', '[]');
+        $this->RegisterPropertyBoolean('VisuCommands', false);
+        $this->RegisterAttributeString('History', '[]');
 
         $this->RegisterAttributeString('State', '{}');
         $this->RegisterAttributeInteger('LastCheck', 0);
@@ -51,6 +56,18 @@ class ShellyFWCheck extends IPSModule
         $this->RegisterVariableString('UpdateNames', 'Geräte mit Update', $plain, 40);
         $this->RegisterVariableString('LastCheck', 'Letzte Prüfung', $plain, 50);
         $this->MaintainVariable('Table', 'Übersicht', VARIABLETYPE_STRING, '~HTMLBox', 60, $this->ReadPropertyBoolean('ShowTable'));
+
+        // Bedienung aus der Visualisierung – nur mit ausdrücklicher Freigabe im Formular
+        $option = static fn (int $value, string $caption): array => ['Value' => $value, 'Caption' => $caption, 'IconActive' => false, 'IconValue' => '',
+            'Color' => -1, 'ColorActive' => false, 'ColorValue' => -1, 'ContentColorActive' => false, 'ContentColorValue' => -1];
+        $commands = $this->ReadPropertyBoolean('VisuCommands');
+        $this->MaintainVariable('Command', 'Befehl', VARIABLETYPE_INTEGER, [
+            'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION,
+            'OPTIONS'      => json_encode([$option(1, 'Jetzt prüfen'), $option(2, 'Alle Updates starten')])
+        ], 5, $commands);
+        if ($commands) {
+            $this->EnableAction('Command');
+        }
 
         // Gewählte Visualisierung als Referenz anmelden (Symcon warnt dann, bevor sie gelöscht wird)
         $visu = $this->ReadPropertyInteger('NotifyVisu');
@@ -124,6 +141,18 @@ class ShellyFWCheck extends IPSModule
             case 'UpdateDevice':
                 $this->UpdateDevice((string) $Value);
                 break;
+            case 'Command':
+                // Variable „Befehl“ aus der Visualisierung; bleibt auf dem letzten Befehl stehen
+                if (!$this->ReadPropertyBoolean('VisuCommands')) {
+                    throw new Exception('Die Bedienung aus der Visualisierung ist im Formular nicht freigegeben.');
+                }
+                $this->SetValue('Command', (int) $Value);
+                if ((int) $Value === 1) {
+                    $this->CheckAll();
+                } elseif ((int) $Value === 2) {
+                    $this->UpdateAll();
+                }
+                break;
             case 'TestNotify':
                 $ok = $this->Notify('Shelly-Firmware', 'Test: So sieht die Meldung bei einem neuen Update aus.');
                 $this->ShowResult($ok ? 'Test-Nachricht gesendet.' : ($this->ReadPropertyInteger('NotifyVisu') < 10000
@@ -146,6 +175,8 @@ class ShellyFWCheck extends IPSModule
         $fill = [
             'Overview'      => ['caption' => $this->OverviewText()],
             'Devices'       => ['values' => $this->ConfigRows($rows)],
+            'History'       => ['values' => $this->HistoryRows()],
+            'PanelHistory'  => ['caption' => 'Update-Verlauf (' . count($this->HistoryRows()) . ')'],
             'Status'        => ['values' => $this->StatusRows($rows)],
             'PanelDevices'  => ['caption' => 'Geräte verwalten (' . count($rows) . ')', 'expanded' => count($rows) === 0],
             'PanelSettings' => ['caption' => 'Prüfung, Nachricht und Anzeige (' . $this->SettingsSummary() . ')'],
@@ -185,6 +216,7 @@ class ShellyFWCheck extends IPSModule
             $again = [];
             $justDone = [];   // Geräte, die in dieser Runde ein Update abgeschlossen haben
             $found = [];      // neu gefundene Updates (für die Benachrichtigung)
+            $history = [];    // abgeschlossene Versionswechsel dieser Runde
             foreach ($rows as $row) {
                 $k = $this->HostKey($row['Host']);
                 $e = $state[$k] ?? $this->EmptyEntry();
@@ -193,10 +225,11 @@ class ShellyFWCheck extends IPSModule
                 $e['checked'] = $now;
                 if (!is_array($data)) {
                     $e['online'] = false;
-                    $e['err'] = 'offline';
+                    $e['err'] = $row['Battery'] ? 'sleep' : 'offline';   // Batteriegeräte schlafen meist – kein Fehler
                     $state[$k] = $e;
                     continue;
                 }
+                $oldVer = $e['ver'];
                 $e['online'] = true;
                 $e['seen'] = $now;
                 $e['err'] = '';
@@ -218,9 +251,17 @@ class ShellyFWCheck extends IPSModule
                 $e['auth'] = (bool) ($data['auth_en'] ?? false);
                 $e['slot'] = isset($data['slot']) ? (int) $data['slot'] : -1;
 
+                if ($e['upd_start'] === 0 && $oldVer !== '' && $e['ver'] !== $oldVer) {
+                    // Version hat sich geändert, ohne dass das Modul ein Update gestartet hat (Auto-Update, Weboberfläche, App)
+                    $history[] = ['ts' => $now, 'name' => $e['name'], 'from' => $oldVer, 'to' => $e['ver'], 'by' => 'Gerät selbst / von außen'];
+                    $this->LogMessage($e['name'] . ': Firmware wurde außerhalb des Moduls von ' . $oldVer . ' auf ' . $e['ver'] . ' geändert', KL_NOTIFY);
+                    $e['note'] = '';
+                }
                 if ($e['upd_start'] > 0) {
                     // Update wurde gestartet: nur auf die neue Version warten
                     if ($e['ver'] !== $e['upd_from']) {
+                        $history[] = ['ts' => $now, 'name' => $e['name'], 'from' => $e['upd_from'], 'to' => $e['ver'],
+                            'by' => $e['upd_chain'] > 0 ? 'Modul (Folge-Update)' : 'Modul'];
                         $this->LogMessage($e['name'] . ': Firmware aktualisiert von ' . $e['upd_from'] . ' auf ' . $e['ver'], KL_NOTIFY);
                         $e['upd_start'] = 0;
                         $e['avail'] = '';
@@ -348,6 +389,7 @@ class ShellyFWCheck extends IPSModule
 
             $this->WriteState($state);
             $this->WriteAttributeInteger('LastCheck', $now);
+            $this->AddHistory($history);
             $this->PublishValues();
             $this->RefreshForm();
             if (count($found) > 0) {
@@ -434,12 +476,27 @@ class ShellyFWCheck extends IPSModule
     /** Shellys per mDNS suchen und in die Liste eintragen (wirksam erst nach „Änderungen übernehmen“). */
     public function Discover(): int
     {
-        $this->ShowResult('Suche läuft …');
-        $found = $this->QueryMdns();
-        if ($found === null) {
-            $this->ShowResult('Die Suche braucht die Symcon-Instanz „DNS-SD Control“ – sie wurde nicht gefunden. Geräte bitte von Hand eintragen.');
+        $ranges = $this->ScanRanges($rangeErrors);
+        $addresses = 0;
+        foreach ($ranges as $r) {
+            $addresses += $r[1] - $r[0] + 1;
+        }
+        $this->ShowResult('Suche läuft … (eigenes Netz' . (count($ranges) > 0 ? ' und ' . count($ranges) . ' weitere Bereiche mit ' . $addresses . ' Adressen' : '') . ')');
+        $mdns = $this->QueryMdns();
+        if ($mdns === null && count($ranges) === 0) {
+            $this->ShowResult('Die Suche im eigenen Netz braucht die Symcon-Instanz „DNS-SD Control“ – sie wurde nicht gefunden. Geräte bitte von Hand eintragen oder unter „Geräte verwalten“ einen Adressbereich angeben.'
+                . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
             return 0;
         }
+        // Funde aus den Adressbereichen dazunehmen; Schlüssel ist die Geräte-ID, dadurch zählt kein Gerät doppelt
+        $found = [];
+        foreach (($mdns ?? []) as $name => $ip) {
+            $found[strtolower((string) $name)] = [$name, $ip];
+        }
+        foreach ($this->ScanAddresses($ranges) as $name => $ip) {
+            $found[strtolower((string) $name)] = $found[strtolower((string) $name)] ?? [$name, $ip];
+        }
+        $found = array_column($found, 1, 0);
         $rows = $this->DeviceRows();
         $state = $this->ReadState();
         $byHost = [];
@@ -469,7 +526,7 @@ class ShellyFWCheck extends IPSModule
                 continue;
             }
             $byHost[$k] = count($list);
-            $list[] = ['Active' => true, 'Name' => $name, 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'rowColor' => '#C0C0FF'];
+            $list[] = ['Active' => true, 'Name' => $name, 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'Battery' => false, 'rowColor' => '#C0C0FF'];
             $new++;
         }
         if ($new + $moved > 0) {
@@ -480,8 +537,121 @@ class ShellyFWCheck extends IPSModule
         } else {
             $text = count($found) . ' Shelly(s) im Netzwerk gefunden – alle stehen schon in der Liste.';
         }
-        $this->ShowResult($text);
+        $this->ShowResult($text . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
         return $new;
+    }
+
+    // ------------------------------------------------ Suche in Adressbereichen
+
+    /**
+     * Adressbereiche aus der Einstellung als [erste, letzte] (Zahlen). Erlaubt: „Von“ + „Bis“,
+     * nur „Von“ (dann das ganze Netz dieser Adresse, .1 bis .254) oder Kurzform 192.168.20.0/24 in „Von“.
+     * @return array<int,array{0:int,1:int}>
+     */
+    private function ScanRanges(?string &$errors): array
+    {
+        $errors = '';
+        $out = [];
+        $raw = json_decode($this->ReadPropertyString('ScanRanges'), true);
+        foreach (is_array($raw) ? $raw : [] as $r) {
+            $from = trim((string) ($r['From'] ?? ''));
+            $to = trim((string) ($r['To'] ?? ''));
+            if ($from === '') {
+                continue;
+            }
+            $first = false;
+            $last = false;
+            if (preg_match('#^(\\d+\\.\\d+\\.\\d+\\.\\d+)/(\\d+)$#', $from, $m) && (int) $m[2] >= 16 && (int) $m[2] <= 30) {
+                $base = ip2long($m[1]);
+                if ($base !== false) {
+                    $size = 1 << (32 - (int) $m[2]);
+                    $net = $base & ~($size - 1);
+                    $first = $net + 1;
+                    $last = $net + $size - 2;
+                }
+            } else {
+                $first = ip2long($from);
+                if ($first !== false && $to === '') {
+                    $net = $first & ~255;      // nur „Von“: das ganze Netz dieser Adresse
+                    $first = $net + 1;
+                    $last = $net + 254;
+                } elseif (preg_match('/^\\d+$/', $to) && $first !== false) {
+                    $last = ($first & ~255) + (int) $to;   // „Bis“ nur als letzte Zahl, z. B. 254
+                } else {
+                    $last = ip2long($to);
+                }
+            }
+            if ($first === false || $last === false || $last < $first) {
+                $errors .= 'Bereich „' . $from . ($to !== '' ? ' – ' . $to : '') . '“ ist keine gültige Angabe und wurde ausgelassen. ';
+                continue;
+            }
+            if ($last - $first + 1 > self::SCAN_MAX) {
+                $errors .= 'Bereich „' . $from . ($to !== '' ? ' – ' . $to : '') . '“ ist größer als ' . self::SCAN_MAX . ' Adressen und wurde ausgelassen. ';
+                continue;
+            }
+            $out[] = [$first, $last];
+        }
+        return $out;
+    }
+
+    /**
+     * Jede Adresse der Bereiche kurz nach /shelly fragen; Antwort eines Shelly ab Gen2 = Fund.
+     * @return array<string,string> Geräte-ID => IP-Adresse
+     */
+    private function ScanAddresses(array $ranges): array
+    {
+        $ips = [];
+        foreach ($ranges as [$first, $last]) {
+            for ($n = $first; $n <= $last; $n++) {
+                $ips[long2ip($n)] = true;
+            }
+        }
+        $found = [];
+        foreach (array_chunk(array_keys($ips), 128) as $chunk) {
+            $requests = [];
+            foreach ($chunk as $ip) {
+                $requests[$ip] = ['url' => 'http://' . $ip . '/shelly', 'timeout' => 3, 'connect_ms' => 1500, 'quiet' => true];
+            }
+            foreach ($this->HttpBatch($requests) as $ip => $res) {
+                $data = $res['code'] === 200 ? $this->DecodeJson($res['body']) : null;
+                if (is_array($data) && (int) ($data['gen'] ?? 0) >= 2 && (string) ($data['id'] ?? '') !== '') {
+                    $found[(string) $data['id']] = (string) $ip;
+                }
+            }
+        }
+        $this->SendDebug('Suche in Adressbereichen', count($ips) . ' Adressen, Funde: ' . json_encode($found), 0);
+        return $found;
+    }
+
+    // ----------------------------------------------------------------- Verlauf
+
+    private function AddHistory(array $entries): void
+    {
+        if (count($entries) === 0) {
+            return;
+        }
+        $history = json_decode($this->ReadAttributeString('History'), true);
+        $history = array_merge($entries, is_array($history) ? $history : []);   // neueste zuerst
+        $this->WriteAttributeString('History', json_encode(array_slice($history, 0, self::HISTORY_MAX)));
+        $this->UpdateFormField('History', 'values', json_encode($this->HistoryRows()));
+    }
+
+    private function HistoryRows(): array
+    {
+        $history = json_decode($this->ReadAttributeString('History'), true);
+        $rows = [];
+        foreach (is_array($history) ? $history : [] as $h) {
+            $rows[] = ['Time' => date('d.m.Y H:i', (int) ($h['ts'] ?? 0)), 'Name' => (string) ($h['name'] ?? ''),
+                'From' => (string) ($h['from'] ?? ''), 'To' => (string) ($h['to'] ?? ''), 'By' => (string) ($h['by'] ?? '')];
+        }
+        return $rows;
+    }
+
+    /** Update-Verlauf als JSON (neueste zuerst): ts, name, from, to, by. */
+    public function GetHistory(): string
+    {
+        $history = json_decode($this->ReadAttributeString('History'), true);
+        return json_encode(is_array($history) ? $history : []);
     }
 
     /** Stand aller Geräte als JSON (für eigene Skripte, z. B. Benachrichtigungen). */
@@ -973,8 +1143,8 @@ class ShellyFWCheck extends IPSModule
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HEADER         => true,
                 CURLOPT_NOSIGNAL       => true,
-                CURLOPT_CONNECTTIMEOUT => 3,
-                CURLOPT_TIMEOUT        => (int) ($r['timeout'] ?? 5)
+                CURLOPT_CONNECTTIMEOUT_MS => (int) ($r['connect_ms'] ?? 3000),
+                CURLOPT_TIMEOUT           => (int) ($r['timeout'] ?? 5)
             ];
             if (isset($r['post'])) {
                 $opts[CURLOPT_POST] = true;
@@ -1001,7 +1171,9 @@ class ShellyFWCheck extends IPSModule
             $auth = preg_match('/^WWW-Authenticate:\s*(.+)$/mi', $headers, $m) ? trim($m[1]) : '';
             $out[(string) $k] = ['code' => $code, 'body' => $body, 'auth' => $auth];
             $what = isset($requests[$k]['post']) ? ' ' . $requests[$k]['post'] : '';
-            $this->SendDebug($requests[$k]['url'] . $what, 'HTTP ' . $code . ' ' . ($code === 0 ? curl_error($ch) : $body), 0);
+            if (empty($requests[$k]['quiet']) || $code === 200) {   // bei der Bereichssuche nur Treffer ins Debug
+                $this->SendDebug($requests[$k]['url'] . $what, 'HTTP ' . $code . ' ' . ($code === 0 ? curl_error($ch) : $body), 0);
+            }
             curl_multi_remove_handle($mh, $ch);
             curl_close($ch);
         }
@@ -1038,7 +1210,8 @@ class ShellyFWCheck extends IPSModule
                 'Active'      => (bool) ($r['Active'] ?? true),
                 'Host'        => $host,
                 'OwnPassword' => (bool) ($r['OwnPassword'] ?? false),
-                'Password'    => (string) ($r['Password'] ?? '')
+                'Password'    => (string) ($r['Password'] ?? ''),
+                'Battery'     => (bool) ($r['Battery'] ?? false)
             ];
         }
         return array_values($rows);
@@ -1103,6 +1276,8 @@ class ShellyFWCheck extends IPSModule
         switch ($e['err']) {
             case 'offline':
                 return 'Nicht erreichbar' . ($e['seen'] > 0 ? ' (zuletzt ' . date('d.m. H:i', $e['seen']) . ')' : '');
+            case 'sleep':
+                return 'Schläft (Batteriegerät' . ($e['seen'] > 0 ? ', zuletzt wach ' . date('d.m. H:i', $e['seen']) : ', bisher nie wach erreicht') . ')';
             case 'gen1':
                 return 'Gen1-Gerät – wird nicht unterstützt';
             case 'auth_missing':
@@ -1133,6 +1308,9 @@ class ShellyFWCheck extends IPSModule
         if ($e['upd_start'] > 0) {
             return 2;
         }
+        if ($e['err'] === 'sleep') {
+            return 0;
+        }
         if ($e['err'] !== '') {
             return 3;
         }
@@ -1155,6 +1333,7 @@ class ShellyFWCheck extends IPSModule
                 'Host'        => $row['Host'],
                 'OwnPassword' => $row['OwnPassword'],
                 'Password'    => $row['Password'],
+                'Battery'     => $row['Battery'],
                 'rowColor'    => ''
             ];
         }
@@ -1195,7 +1374,7 @@ class ShellyFWCheck extends IPSModule
     private function Counts(): array
     {
         $state = $this->ReadState();
-        $c = ['total' => 0, 'updates' => 0, 'offline' => 0, 'running' => 0, 'ok' => 0, 'names' => []];
+        $c = ['total' => 0, 'updates' => 0, 'offline' => 0, 'running' => 0, 'ok' => 0, 'sleeping' => 0, 'names' => []];
         foreach ($this->ActiveRows() as $row) {
             $c['total']++;
             $e = $state[$this->HostKey($row['Host'])] ?? null;
@@ -1206,6 +1385,8 @@ class ShellyFWCheck extends IPSModule
                 $c['running']++;
             } elseif ($e['err'] === 'offline') {
                 $c['offline']++;
+            } elseif ($e['err'] === 'sleep') {
+                $c['sleeping']++;
             } elseif ($e['err'] === '' && $e['avail'] !== '') {
                 $c['updates']++;
                 $c['names'][] = $e['name'];
@@ -1228,10 +1409,13 @@ class ShellyFWCheck extends IPSModule
         if ($last === 0) {
             return $parts[0] . '  ·  noch nicht geprüft – die erste Abfrage läuft gleich von selbst';
         }
-        $problems = $c['total'] - $c['updates'] - $c['running'] - $c['offline'] - $c['ok'];
-        $parts[] = $c['updates'] > 0 ? $c['updates'] . ' mit Update' : ($c['ok'] === $c['total'] ? 'alle aktuell' : 'kein Update');
+        $problems = $c['total'] - $c['updates'] - $c['running'] - $c['offline'] - $c['ok'] - $c['sleeping'];
+        $parts[] = $c['updates'] > 0 ? $c['updates'] . ' mit Update' : ($c['ok'] + $c['sleeping'] === $c['total'] ? 'alle aktuell' : 'kein Update');
         if ($problems > 0) {
             $parts[] = $problems . ' mit Fehler';
+        }
+        if ($c['sleeping'] > 0) {
+            $parts[] = $c['sleeping'] . ' schlafen';
         }
         if ($c['running'] > 0) {
             $parts[] = $c['running'] . ' Update(s) laufen';
