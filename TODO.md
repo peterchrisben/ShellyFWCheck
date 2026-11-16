@@ -27,5 +27,5 @@
 | Nach Build 12 alles wie vorher | Formular öffnen, „Jetzt prüfen“: Texte unverändert deutsch, Status-Spalte und Update-Verlauf stimmen (auch alte Einträge) | Build 12 | offen |
 | Englisch | nur wer mag: Symcon-Konsole auf Englisch stellen – Formular und Meldungen englisch? | Build 12 | offen |
 | Befehl aus der Visu (Build 13) | Haken „Bedienung aus der Visualisierung freigeben“ setzen, übernehmen: keine Fehlermeldung, Variable „Befehl“ da, in Kachel-Visu und App auswählbar | Build 13 | offen |
-| H&T: Wach-Signal (Build 14) | Beim H&T in „Geräte verwalten“ Wach-Signal = Temperatur-Variable wählen, übernehmen. Taste drücken: Debug „Wach-Signal“, Zeile zeigt Version und ggf. „Update verfügbar“ | Build 14 | offen |
-| H&T: vorgemerktes Update (Build 14) | Bei schlafendem H&T mit Update: Haken + „Ausgewählte aktualisieren“ → „vorgemerkt“ (blau). Beim nächsten Aufwachen startet es (Display „OTA“), danach „Aktualisiert“ | nächstes H&T-Update | offen |
+| H&T: Wach-Signal (Build 14) | Beim H&T in „Geräte verwalten“ Wach-Signal = Temperatur-Variable wählen, übernehmen. Taste drücken: Debug „Wach-Signal“, Zeile zeigt Version und ggf. „Update verfügbar“ | Build 14 | ok (16.11., drei H&T) |
+| H&T: vorgemerktes Update (Build 14) | Bei schlafendem H&T mit Update: Haken + „Ausgewählte aktualisieren“ → „vorgemerkt“ (blau). Beim nächsten Aufwachen startet es (Display „OTA“), danach „Aktualisiert“ | nächstes H&T-Update | ok (16.11., Build 16, 1.7.1 → 2.0.3) |

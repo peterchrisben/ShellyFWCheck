@@ -171,7 +171,8 @@
             "Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten": "Scheduled – look for an update and start it when the device next wakes up",
             "%s: Batteriegerät ist wach – vorgemerktes Update gestartet": "%s: battery device is awake – scheduled update started",
             "neueste Version": "latest version",
-            "Kein Update gemeldet (Batteriegerät – Angabe unsicher)": "No update reported (battery device – not reliable)"
+            "Kein Update gemeldet (Batteriegerät – Angabe unsicher)": "No update reported (battery device – not reliable)",
+            "schläft (zuletzt wach %s)": "sleeping (last awake %s)"
         }
     }
 }

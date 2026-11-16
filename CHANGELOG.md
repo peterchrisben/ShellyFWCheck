@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 17 (16.11.2026)
+
+#### Geändert
+- Batteriegeräte werden beim Aufwachen direkt nach einem Update gefragt – an echten Shelly H&T beantwortet das Gerät die Abfrage in unter einer Sekunde. Damit ist der Update-Stand verlässlich; vorgemerkte Updates starten gleich danach, ohne Fehlversuch (der H&T lehnt den Update-Befehl ohne vorherige Abfrage ab).
+- Ein aktualisiertes Batteriegerät zeigt weiter „Aktualisiert (vorher …) – schläft“ (grün), auch wenn es wieder eingeschlafen ist.
+
+#### Dokumentation
+- Batteriegeräte an drei echten Shelly H&T Gen3 bestätigt: Wach-Signal, Vormerken und Update beim Aufwachen (1.7.1 → 2.0.3).
+
 ### Build 16 (16.11.2026)
 
 #### Geändert

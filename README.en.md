@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 16)
+Current version: 1.0 (Build 17)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 
@@ -30,11 +30,11 @@ As long as no device is entered, Symcon shows "Instance is inactive" – that is
 
 **Shellys in a different network** (guest or IoT network, garden shed): the normal search only finds devices in the network of Symcon. Under "Manage devices" you can enter additional address ranges at "Search further networks", e.g. From `192.168.20.1`, To `192.168.20.254`. If "To" is left empty, the whole network of the address is searched; the short form `192.168.20.0/24` works as well. At most 1024 addresses per row. Symcon must be able to reach the other network. Searching only happens with the button "Search devices on the network".
 
-**Battery devices** (e.g. Shelly H&T): tick "Battery" in the device list. The device is then shown as "Sleeping" instead of as an error and is not counted under "Not reachable". Battery devices are only awake for about two seconds and usually do not report an available update in that time. The module therefore also derives an update from devices of the same model: if another H&T already runs a newer version, it is shown as available. If nothing is known, the status reads "No update reported (battery device – not reliable)" instead of "Up to date".
+**Battery devices** (e.g. Shelly H&T): tick "Battery" in the device list. The device is then shown as "Sleeping" instead of as an error and is not counted under "Not reachable". Battery devices are only awake for about two seconds. In that time the module asks them for an update (the H&T answers in less than a second). While a device is asleep, an update is also derived from devices of the same model: if another H&T already runs a newer version, it is shown as available.
 
 **Wake signal:** so that the module catches the right moment, select a variable in the column "Wake signal" that is written whenever the device wakes up – e.g. the temperature from the Shelly module (MQTT). When it is updated, the module queries only this device right away.
 
-**Update for a sleeping device:** tick it and press "Update selected" (or "Start all updates"). The update is **scheduled** and starts by itself when the device next wakes up – even if the module does not yet know whether there is an update: when the device wakes up it sends the update command right away; if the device declines, it asks for an update and starts one that exists ("Start all updates" only includes devices with a known update); it is confirmed on the wake-up after that. Without a wake signal this only works if the device happens to be awake during a check. Removing the tick "Battery" discards the scheduled update.
+**Update for a sleeping device:** tick it and press "Update selected" (or "Start all updates"). The update is **scheduled** and starts by itself when the device next wakes up – even if the module does not yet know whether there is an update: when the device wakes up it asks for an update and starts one that exists right away ("Start all updates" only includes devices with a known update); it is confirmed on the wake-up after that. Without a wake signal this only works if the device happens to be awake during a check. Removing the tick "Battery" discards the scheduled update.
 
 If a device has a different password: under "Manage devices" tick **Own PW** in its row and enter the password there. The user name is always "admin" on Shelly devices.
 
