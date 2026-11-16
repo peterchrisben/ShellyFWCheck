@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 4 (16.11.2026)
+
+#### Neu
+- Klick auf die IP-Adresse in der Übersicht öffnet die Weboberfläche des Geräts.
+
 ### Build 3 (16.11.2026)
 
 #### Neu

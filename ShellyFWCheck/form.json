@@ -189,7 +189,9 @@
           "caption": "IP-Adresse",
           "name": "Host",
           "width": "150px",
-          "add": ""
+          "add": "",
+          "onClick": "echo 'http://' . $Status['Host'];",
+          "link": true
         },
         {
           "caption": "Modell",
@@ -221,7 +223,7 @@
     },
     {
       "type": "Label",
-      "caption": "Haken in der Spalte „Auswahl“ lassen sich nur bei Geräten mit verfügbarem Update setzen."
+      "caption": "Haken in der Spalte „Auswahl“ lassen sich nur bei Geräten mit verfügbarem Update setzen. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts."
     }
   ],
   "status": []
