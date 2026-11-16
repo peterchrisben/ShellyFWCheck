@@ -1,0 +1,12 @@
+{
+  "id": "{2B409EE1-0A1D-4688-ADB6-CB2531CF2007}",
+  "name": "ShellyFWCheck",
+  "type": 3,
+  "vendor": "Shelly",
+  "aliases": ["Shelly Firmware-Check"],
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "SFW",
+  "url": "https://github.com/peterchrisben/ShellyFWCheck"
+}
