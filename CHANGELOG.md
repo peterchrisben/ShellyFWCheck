@@ -2,6 +2,17 @@
 
 ## Version 1.0
 
+### Build 2 (16.11.2026)
+
+#### Geändert
+- Formular aufgeteilt: Einstellungen unter „Geräte verwalten“ (Aktiv, IP-Adresse, Passwort), der aktuelle Stand in einer eigenen „Übersicht“ bei den Knöpfen.
+- Gerätesuche zeigt sofort „Suche läuft …“ und klappt „Geräte verwalten“ mit den Funden auf.
+- Überblickszeile erklärt bei leerer Liste, warum die Instanz inaktiv ist.
+
+#### Behoben
+- Nach jeder Abfrage erschien „Die Instanz hat noch ungespeicherte Änderungen“, obwohl nichts geändert wurde.
+- Überblickszeile zeigte vor der ersten Abfrage „alle aktuell“; Geräte mit Fehler (z. B. Passwort falsch) werden jetzt mitgezählt.
+
 ### Build 1 (16.11.2026)
 
 #### Neu

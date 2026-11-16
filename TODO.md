@@ -2,8 +2,10 @@
 
 | Was | Wie prüfen | Wann | Status |
 |---|---|---|---|
-| Gerätesuche (mDNS) | „Geräte im Netzwerk suchen“ – werden alle Shellys gefunden? | sofort | offen |
-| Passwort-Spalte in der Liste | Wird das Passwort in der Zeile verdeckt angezeigt? | sofort | offen |
+| Gerätesuche (mDNS) | „Geräte im Netzwerk suchen“ – werden alle Shellys gefunden? | sofort | ok (16.11., 11 Geräte) |
+| Passwort-Spalte in der Liste | Wird das Passwort in der Zeile verdeckt angezeigt? | sofort | ok (16.11.) |
+| Kein orangener Balken nach Abfrage | „Änderungen übernehmen“, 10 Sekunden warten, „Jetzt prüfen“ – Balken darf nicht erscheinen | Build 2 | offen |
+| Suche klappt „Geräte verwalten“ auf | bei neuem Gerät: Panel öffnet sich, Zeile blau | Build 2 | offen |
 | Master-Passwort / eigenes Passwort | Gerät mit Master-PW, eines mit eigenem PW, eines mit falschem PW („Passwort falsch“) | sofort | offen |
 | „Markiertes Gerät aktualisieren“ | Zeile markieren, Knopf drücken – startet das richtige Gerät? | sobald ein Update verfügbar ist | offen |
 | Update-Kontrolle | Status wechselt von „Update läuft“ auf „Aktualisiert“ (nach 1–3 Minuten) | sobald ein Update verfügbar ist | offen |

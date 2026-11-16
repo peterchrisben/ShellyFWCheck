@@ -2,7 +2,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln oder alle nacheinander. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 1)
+Aktuelle Version: 1.0 (Build 2)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -16,23 +16,25 @@ Aktuelle Version: 1.0 (Build 1)
 
 1. Instanz hinzufügen → **Shelly Firmware-Check**.
 2. Sind die Geräte passwortgeschützt: unter **Passwort** das **Master-Passwort** eintragen.
-3. **Geräte im Netzwerk suchen** drücken – gefundene Shellys erscheinen in der Liste. Geräte, die nicht gefunden werden (anderes Netz/VLAN), über „Hinzufügen“ mit ihrer IP-Adresse eintragen.
-4. **Änderungen übernehmen**. Kurz danach stehen Name, Modell, installierte und verfügbare Version in der Liste.
+3. **Geräte im Netzwerk suchen** drücken – gefundene Shellys erscheinen blau markiert unter **Geräte verwalten**. Geräte, die nicht gefunden werden (anderes Netz/VLAN), dort über „Hinzufügen“ mit ihrer IP-Adresse eintragen.
+4. **Änderungen übernehmen**. Kurz danach stehen Name, Modell, installierte und verfügbare Version unten in der **Übersicht**.
 
-Hat ein Gerät ein anderes Passwort: in seiner Zeile den Haken **Eigenes PW** setzen und das Passwort dort eintragen. Der Benutzername ist bei Shelly immer „admin“.
+Solange kein Gerät eingetragen ist, zeigt Symcon „Instanz ist inaktiv“ – das ist normal.
+
+Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zeile den Haken **Eigenes PW** setzen und das Passwort dort eintragen. Der Benutzername ist bei Shelly immer „admin“.
 
 ## Bedienung
 
 | Knopf | Was passiert |
 |---|---|
 | Jetzt prüfen | fragt alle aktiven Geräte ab |
-| Geräte im Netzwerk suchen | sucht Shellys per mDNS; neue Geräte und geänderte IP-Adressen werden in die Liste eingetragen (wirksam nach „Änderungen übernehmen“) |
-| Markiertes Gerät aktualisieren | startet das Update für die markierte Zeile |
+| Geräte im Netzwerk suchen | sucht Shellys per mDNS; neue Geräte und geänderte IP-Adressen werden unter „Geräte verwalten“ eingetragen (wirksam nach „Änderungen übernehmen“) |
+| Markiertes Gerät aktualisieren | startet das Update für die in der Übersicht markierte Zeile |
 | Alle Updates starten | startet alle verfügbaren Updates nacheinander, mit Pause dazwischen (Standard 20 Sekunden) |
 
 Nach dem Start eines Updates fragt das Modul jede Minute nach, bis das Gerät die neue Version meldet („Aktualisiert“). Bleibt die Version 15 Minuten unverändert, steht „Update nicht bestätigt“ in der Zeile.
 
-Status in der Liste: Aktuell · Update verfügbar (gelb) · Update läuft (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot).
+Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot).
 
 Batteriegeräte schlafen meist und zeigen dann „Nicht erreichbar“. Wer sie nicht in der Übersicht haben möchte, nimmt den Haken **Aktiv** heraus.
 

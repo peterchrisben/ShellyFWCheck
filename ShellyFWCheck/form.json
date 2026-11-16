@@ -9,25 +9,21 @@
       ]
     },
     {
-      "type": "ExpansionPanel", "name": "PanelDevices", "caption": "Geräte", "expanded": true,
+      "type": "ExpansionPanel", "name": "PanelDevices", "caption": "Geräte verwalten", "expanded": false,
       "items": [
         {
-          "type": "List", "name": "Devices", "caption": "", "rowCount": 15, "add": true, "delete": true,
+          "type": "List", "name": "Devices", "caption": "", "rowCount": 12, "add": true, "delete": true,
           "loadValuesFromConfiguration": false,
           "columns": [
             { "caption": "Aktiv", "name": "Active", "width": "70px", "add": true, "edit": { "type": "CheckBox" } },
-            { "caption": "Name", "name": "Name", "width": "220px", "add": "", "save": false },
-            { "caption": "IP-Adresse", "name": "Host", "width": "150px", "add": "", "edit": { "type": "ValidationTextBox" } },
-            { "caption": "Modell", "name": "Model", "width": "150px", "add": "", "save": false },
-            { "caption": "Installiert", "name": "Installed", "width": "110px", "add": "", "save": false },
-            { "caption": "Verfügbar", "name": "Available", "width": "110px", "add": "", "save": false },
-            { "caption": "Status", "name": "State", "width": "auto", "add": "Neu – noch nicht gespeichert", "save": false },
+            { "caption": "Name", "name": "Name", "width": "auto", "add": "", "save": false },
+            { "caption": "IP-Adresse", "name": "Host", "width": "180px", "add": "", "edit": { "type": "ValidationTextBox" } },
             { "caption": "Eigenes PW", "name": "OwnPassword", "width": "110px", "add": false, "edit": { "type": "CheckBox" } },
-            { "caption": "Passwort", "name": "Password", "width": "150px", "add": "", "edit": { "type": "PasswordTextBox" } }
+            { "caption": "Passwort", "name": "Password", "width": "180px", "add": "", "edit": { "type": "PasswordTextBox" } }
           ],
           "values": []
         },
-        { "type": "Label", "caption": "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Batteriegeräte schlafen meist und sind dann nicht erreichbar." }
+        { "type": "Label", "caption": "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Ob ein Passwort stimmt, zeigt die Übersicht unten nach „Änderungen übernehmen“." }
       ]
     },
     {
@@ -51,11 +47,23 @@
       "items": [
         { "type": "Button", "caption": "Jetzt prüfen", "onClick": "SFW_CheckAll($id);" },
         { "type": "Button", "caption": "Geräte im Netzwerk suchen", "onClick": "SFW_Discover($id);" },
-        { "type": "Button", "caption": "Markiertes Gerät aktualisieren", "onClick": "SFW_UpdateDevice($id, $Devices['Host']);", "confirm": "Update für das markierte Gerät starten? Es startet dabei neu." },
+        { "type": "Button", "caption": "Markiertes Gerät aktualisieren", "onClick": "SFW_UpdateDevice($id, $Status['Host']);", "confirm": "Update für das markierte Gerät starten? Es startet dabei neu." },
         { "type": "Button", "caption": "Alle Updates starten", "onClick": "SFW_UpdateAll($id);", "confirm": "Updates für alle Geräte mit verfügbarem Update nacheinander starten? Die Geräte starten dabei neu." }
       ]
     },
-    { "type": "Label", "name": "Result", "caption": "" }
+    { "type": "Label", "name": "Result", "caption": "" },
+    {
+      "type": "List", "name": "Status", "caption": "Übersicht", "rowCount": 15, "add": false, "delete": false,
+      "columns": [
+        { "caption": "Name", "name": "Name", "width": "260px", "add": "" },
+        { "caption": "IP-Adresse", "name": "Host", "width": "150px", "add": "" },
+        { "caption": "Modell", "name": "Model", "width": "160px", "add": "" },
+        { "caption": "Installiert", "name": "Installed", "width": "130px", "add": "" },
+        { "caption": "Verfügbar", "name": "Available", "width": "130px", "add": "" },
+        { "caption": "Status", "name": "State", "width": "auto", "add": "" }
+      ],
+      "values": []
+    }
   ],
   "status": []
 }

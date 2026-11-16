@@ -114,14 +114,13 @@ class ShellyFWCheck extends IPSModule
     public function GetConfigurationForm()
     {
         $form = json_decode((string) file_get_contents(__DIR__ . '/form.json'), true);
-        $rows = $this->ListRows($this->DeviceRows());
-        $c = $this->Counts();
-        $deviceCaption = 'Geräte (' . count($rows) . ($c['updates'] > 0 ? ' · ' . $c['updates'] . ' mit Update' : '') . ')';
+        $rows = $this->DeviceRows();
         $noSetup = count($rows) === 0 && $this->ReadPropertyString('MasterPassword') === '';
         $fill = [
             'Overview'      => ['caption' => $this->OverviewText()],
-            'Devices'       => ['values' => $rows],
-            'PanelDevices'  => ['caption' => $deviceCaption],
+            'Devices'       => ['values' => $this->ConfigRows($rows)],
+            'Status'        => ['values' => $this->StatusRows($rows)],
+            'PanelDevices'  => ['caption' => 'Geräte verwalten (' . count($rows) . ')', 'expanded' => count($rows) === 0],
             'PanelPassword' => ['expanded' => $noSetup,
                 'caption' => 'Passwort' . ($this->ReadPropertyString('MasterPassword') !== '' ? ' (Master-Passwort hinterlegt)' : '')]
         ];
@@ -247,7 +246,7 @@ class ShellyFWCheck extends IPSModule
     {
         $Host = $this->CleanHost($Host);
         if ($Host === '') {
-            $this->ShowResult('Bitte erst eine Zeile in der Geräteliste markieren.');
+            $this->ShowResult('Bitte erst eine Zeile in der Übersicht markieren.');
             return false;
         }
         $ok = $this->StartUpdate($Host, $message);
@@ -282,6 +281,7 @@ class ShellyFWCheck extends IPSModule
     /** Shellys per mDNS suchen und in die Liste eintragen (wirksam erst nach „Änderungen übernehmen“). */
     public function Discover(): int
     {
+        $this->ShowResult('Suche läuft …');
         $found = $this->QueryMdns();
         if ($found === null) {
             $this->ShowResult('Die Suche braucht die Symcon-Instanz „DNS-SD Control“ – sie wurde nicht gefunden. Geräte bitte von Hand eintragen.');
@@ -299,7 +299,7 @@ class ShellyFWCheck extends IPSModule
                 $byId[$id] = $i;
             }
         }
-        $list = $this->ListRows($rows);
+        $list = $this->ConfigRows($rows);
         $new = 0;
         $moved = 0;
         foreach ($found as $name => $ip) {
@@ -311,20 +311,19 @@ class ShellyFWCheck extends IPSModule
             if (isset($byId[$id])) {
                 // bekanntes Gerät mit neuer IP-Adresse
                 $list[$byId[$id]]['Host'] = $ip;
-                $list[$byId[$id]]['State'] = 'Neue IP-Adresse gefunden – noch nicht gespeichert';
                 $list[$byId[$id]]['rowColor'] = '#C0C0FF';
                 $moved++;
                 continue;
             }
             $byHost[$k] = count($list);
-            $list[] = ['Active' => true, 'Name' => $name, 'Host' => $ip, 'Model' => '', 'Installed' => '', 'Available' => '',
-                'State' => 'Neu – noch nicht gespeichert', 'OwnPassword' => false, 'Password' => '', 'rowColor' => '#C0C0FF'];
+            $list[] = ['Active' => true, 'Name' => $name, 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'rowColor' => '#C0C0FF'];
             $new++;
         }
         if ($new + $moved > 0) {
             $this->UpdateFormField('Devices', 'values', json_encode($list));
+            $this->UpdateFormField('PanelDevices', 'expanded', true);
             $text = count($found) . ' Shelly(s) im Netzwerk gefunden: ' . $new . ' neu' . ($moved > 0 ? ', ' . $moved . ' mit neuer IP-Adresse' : '')
-                . '. Jetzt „Änderungen übernehmen“ drücken.';
+                . ' – oben unter „Geräte verwalten“ blau markiert. Jetzt „Änderungen übernehmen“ drücken.';
         } else {
             $text = count($found) . ' Shelly(s) im Netzwerk gefunden – alle stehen schon in der Liste.';
         }
@@ -744,11 +743,10 @@ class ShellyFWCheck extends IPSModule
         return strpos($e['note'], 'Aktualisiert') === 0 ? 4 : 0;
     }
 
-    /** Zeilen für die Liste im Formular: gespeicherte Spalten + aktueller Stand, Zuordnung über die Adresse. */
-    private function ListRows(array $rows): array
+    /** Zeilen der Einstell-Liste „Geräte verwalten“: nur gespeicherte Spalten + Name (ändert sich durch Abfragen nie). */
+    private function ConfigRows(array $rows): array
     {
         $state = $this->ReadState();
-        $colors = [0 => '', 1 => '#FFFFC0', 2 => '#C0C0FF', 3 => '#FFC0C0', 4 => '#C0FFC0'];
         $list = [];
         foreach ($rows as $row) {
             $e = $state[$this->HostKey($row['Host'])] ?? $this->EmptyEntry();
@@ -756,13 +754,33 @@ class ShellyFWCheck extends IPSModule
                 'Active'      => $row['Active'],
                 'Name'        => $e['name'],
                 'Host'        => $row['Host'],
-                'Model'       => $e['model'],
-                'Installed'   => $e['ver'],
-                'Available'   => $e['avail'],
-                'State'       => $row['Active'] ? $this->StateText($e) : 'Nicht aktiv',
                 'OwnPassword' => $row['OwnPassword'],
                 'Password'    => $row['Password'],
-                'rowColor'    => $row['Active'] ? $colors[$this->StateKind($e)] : ''
+                'rowColor'    => ''
+            ];
+        }
+        return $list;
+    }
+
+    /** Zeilen der Übersicht (reine Anzeige, gehört nicht zu den Einstellungen). */
+    private function StatusRows(array $rows): array
+    {
+        $state = $this->ReadState();
+        $colors = [0 => '', 1 => '#FFFFC0', 2 => '#C0C0FF', 3 => '#FFC0C0', 4 => '#C0FFC0'];
+        $list = [];
+        foreach ($rows as $row) {
+            if (!$row['Active']) {
+                continue;
+            }
+            $e = $state[$this->HostKey($row['Host'])] ?? $this->EmptyEntry();
+            $list[] = [
+                'Name'      => $e['name'],
+                'Host'      => $row['Host'],
+                'Model'     => $e['model'],
+                'Installed' => $e['ver'],
+                'Available' => $e['avail'],
+                'State'     => $this->StateText($e),
+                'rowColor'  => $colors[$this->StateKind($e)]
             ];
         }
         return $list;
@@ -771,7 +789,7 @@ class ShellyFWCheck extends IPSModule
     private function Counts(): array
     {
         $state = $this->ReadState();
-        $c = ['total' => 0, 'updates' => 0, 'offline' => 0, 'running' => 0, 'names' => []];
+        $c = ['total' => 0, 'updates' => 0, 'offline' => 0, 'running' => 0, 'ok' => 0, 'names' => []];
         foreach ($this->ActiveRows() as $row) {
             $c['total']++;
             $e = $state[$this->HostKey($row['Host'])] ?? null;
@@ -785,6 +803,8 @@ class ShellyFWCheck extends IPSModule
             } elseif ($e['err'] === '' && $e['avail'] !== '') {
                 $c['updates']++;
                 $c['names'][] = $e['name'];
+            } elseif ($e['err'] === '' && $e['checked'] > 0) {
+                $c['ok']++;
             }
         }
         sort($c['names'], SORT_NATURAL | SORT_FLAG_CASE);
@@ -795,18 +815,25 @@ class ShellyFWCheck extends IPSModule
     {
         $c = $this->Counts();
         if ($c['total'] === 0) {
-            return 'Noch keine Geräte: unten „Geräte im Netzwerk suchen“ drücken oder in der Liste von Hand hinzufügen, dann „Änderungen übernehmen“.';
+            return 'Noch keine Geräte – deshalb steht oben „Instanz ist inaktiv“. Unten „Geräte im Netzwerk suchen“ drücken (oder unter „Geräte verwalten“ von Hand hinzufügen), dann „Änderungen übernehmen“ – danach ist die Instanz aktiv.';
         }
         $last = $this->ReadAttributeInteger('LastCheck');
         $parts = ['● ' . $c['total'] . ' Geräte'];
-        $parts[] = $c['updates'] > 0 ? $c['updates'] . ' mit Update' : 'alle aktuell';
+        if ($last === 0) {
+            return $parts[0] . '  ·  noch nicht geprüft – die erste Abfrage läuft gleich von selbst';
+        }
+        $problems = $c['total'] - $c['updates'] - $c['running'] - $c['offline'] - $c['ok'];
+        $parts[] = $c['updates'] > 0 ? $c['updates'] . ' mit Update' : ($c['ok'] === $c['total'] ? 'alle aktuell' : 'kein Update');
+        if ($problems > 0) {
+            $parts[] = $problems . ' mit Fehler';
+        }
         if ($c['running'] > 0) {
             $parts[] = $c['running'] . ' Update(s) laufen';
         }
         if ($c['offline'] > 0) {
             $parts[] = $c['offline'] . ' nicht erreichbar';
         }
-        $parts[] = $last > 0 ? 'letzte Prüfung ' . date('d.m. H:i', $last) : 'noch nicht geprüft';
+        $parts[] = 'letzte Prüfung ' . date('d.m. H:i', $last);
         return implode('  ·  ', $parts);
     }
 
@@ -858,7 +885,9 @@ class ShellyFWCheck extends IPSModule
     private function RefreshForm(): void
     {
         $this->UpdateFormField('Overview', 'caption', $this->OverviewText());
-        $this->UpdateFormField('Devices', 'values', json_encode($this->ListRows($this->DeviceRows())));
+        // Nur die Übersicht auffrischen – die Einstell-Liste „Devices“ bleibt unberührt,
+        // sonst meldet Symcon nach jeder Abfrage „ungespeicherte Änderungen“.
+        $this->UpdateFormField('Status', 'values', json_encode($this->StatusRows($this->DeviceRows())));
     }
 
     private function ShowResult(string $text): void
