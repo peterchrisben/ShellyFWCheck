@@ -429,7 +429,8 @@ class ShellyFWCheck extends IPSModule
                         $wakeStart[$k] = ['host' => $e['host'] ?? '', 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
                             'timeout' => 10, 'password' => '', 'auth' => $e['auth']];
                     } else {
-                        $e['pending'] = false;   // nichts mehr zu tun (z. B. inzwischen anders aktualisiert)
+                        $e['pending'] = false;   // nichts zu tun: Gerät ist aktuell
+                        $this->LogMessage($this->T('%s: Batteriegerät ist wach – kein Update verfügbar, Vormerkung erledigt', $e['name']), KL_NOTIFY);
                     }
                 }
                 $state[$k] = $e;
@@ -623,7 +624,7 @@ class ShellyFWCheck extends IPSModule
             if ($only !== null && !in_array($k, $only, true)) {
                 continue;
             }
-            if (!$this->CanUpdate($state[$k] ?? null)) {
+            if (!$this->CanUpdate($state[$k] ?? null, $only !== null)) {
                 continue;
             }
             if ($state[$k]['err'] === 'sleep') {
@@ -658,12 +659,16 @@ class ShellyFWCheck extends IPSModule
         return $count;
     }
 
-    private function CanUpdate(?array $e): bool
+    /** $picked: ausdrücklich ausgewählt – ein schlafendes Batteriegerät wird dann auch ohne bekanntes Update vorgemerkt. */
+    private function CanUpdate(?array $e, bool $picked = false): bool
     {
-        if ($e === null || $e['avail'] === '' || $e['upd_start'] > 0 || $e['pending']) {
+        if ($e === null || $e['upd_start'] > 0 || $e['pending']) {
             return false;
         }
-        return ($e['online'] && $e['err'] === '') || ($e['battery'] && $e['err'] === 'sleep');
+        if ($e['battery'] && $e['err'] === 'sleep') {
+            return $e['avail'] !== '' || ($picked && $e['gen'] >= 2);
+        }
+        return $e['avail'] !== '' && $e['online'] && $e['err'] === '';
     }
 
     /** Shellys per mDNS suchen und in die Liste eintragen (wirksam erst nach „Änderungen übernehmen“). */
@@ -1058,13 +1063,22 @@ class ShellyFWCheck extends IPSModule
             $message = $this->T('%s: Update läuft bereits.', $e['name']);
             return false;
         }
+        if ($e['pending']) {
+            $message = $this->T('%s: Update ist schon vorgemerkt und startet beim nächsten Aufwachen.', $e['name']);
+            return true;
+        }
+        if ($e['avail'] === '' && $row['Battery'] && $e['err'] === 'sleep') {
+            // Batteriegerät schläft, Update noch unbekannt: beim nächsten Aufwachen nachsehen und gleich starten
+            $e['pending'] = true;
+            $state[$k] = $e;
+            $this->WriteState($state);
+            $message = $this->T('%s: Batteriegerät schläft – beim nächsten Aufwachen wird nach einem Update gesehen und es gleich gestartet.', $e['name']);
+            $this->LogMessage($message, KL_NOTIFY);
+            return true;
+        }
         if ($e['avail'] === '') {
             $message = $this->T('%s: kein Update bekannt – ggf. erst „Jetzt prüfen“.', $e['name']);
             return false;
-        }
-        if ($e['pending']) {
-            $message = $this->T('%s: Update auf %s ist schon vorgemerkt und startet beim nächsten Aufwachen.', $e['name'], $e['avail']);
-            return true;
         }
         $res = ['ok' => false, 'err' => 'offline', 'msg' => ''];
         if (!$row['Battery'] || $e['err'] !== 'sleep') {
@@ -1525,7 +1539,8 @@ class ShellyFWCheck extends IPSModule
             return $this->T('Update auf %s läuft …', $e['upd_target']) . ' (' . implode(', ', $parts) . ')';
         }
         if ($e['pending']) {
-            return $this->T('Update auf %s vorgemerkt – startet beim nächsten Aufwachen', $e['avail']);
+            return $e['avail'] !== '' ? $this->T('Update auf %s vorgemerkt – startet beim nächsten Aufwachen', $e['avail'])
+                : $this->T('Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten');
         }
         if ($e['err'] === 'sleep' && $e['avail'] !== '') {
             return $this->T('Schläft – Update auf %s verfügbar (zuletzt wach %s)', $e['avail'], date('d.m. H:i', $e['seen']));

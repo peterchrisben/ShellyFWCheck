@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 15 (16.11.2026)
+
+#### Geändert
+- Schlafendes Batteriegerät mit Haken + „Ausgewählte aktualisieren“ wird jetzt auch vorgemerkt, wenn das Modul noch kein Update kennt: Beim Aufwachen sieht es nach und startet ein vorhandenes Update sofort; ist das Gerät aktuell, ist die Vormerkung erledigt. Bisher kam „kein Update verfügbar“. „Alle Updates starten“ merkt weiterhin nur Geräte mit bekanntem Update vor.
+
 ### Build 14 (16.11.2026)
 
 #### Neu
