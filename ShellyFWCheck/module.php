@@ -223,6 +223,9 @@ class ShellyFWCheck extends IPSModule
                 $state[$k] = $e;
                 $calls[$k] = ['host' => $row['Host'], 'method' => 'Shelly.CheckForUpdate', 'params' => [],
                     'timeout' => 45, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
+                // Zeitpläne lesen: das automatische Update des Geräts ist ein Zeitplan, der Shelly.Update aufruft
+                $calls[$k . '#sched'] = ['host' => $row['Host'], 'method' => 'Schedule.List', 'params' => [],
+                    'timeout' => 15, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
             }
 
             // Update läuft und Gerät startet gerade neu → nicht als Fehler zeigen
@@ -258,6 +261,11 @@ class ShellyFWCheck extends IPSModule
 
             // 2. Schritt: nach Updates fragen (das Gerät fragt dafür selbst beim Shelly-Server nach)
             foreach ($this->RpcBatch($calls) as $k => $res) {
+                if (substr((string) $k, -6) === '#sched') {
+                    $k = substr((string) $k, 0, -6);
+                    $state[$k] = array_merge($state[$k], $this->ReadAutoUpdate($res));
+                    continue;
+                }
                 $e = $state[$k];
                 if (!$res['ok']) {
                     $e['err'] = $res['err'];
@@ -431,10 +439,44 @@ class ShellyFWCheck extends IPSModule
                 'installed' => $e['ver'],
                 'available' => $e['avail'],
                 'updating'  => $e['upd_start'] > 0,
+                'autoUpdate' => $e['auto'] === '' ? 'unknown' : ($e['auto'] === 'off' || !$e['auto_on'] ? 'off' : $e['auto']),
+                'autoUpdateSchedule' => $e['auto_spec'],
                 'status'    => $this->StateText($e)
             ];
         }
         return json_encode($out);
+    }
+
+    // ------------------------------------------------------- Auto-Update lesen
+
+    /** Aus der Antwort von Schedule.List: gibt es einen Zeitplan, der Shelly.Update aufruft? */
+    private function ReadAutoUpdate(array $res): array
+    {
+        if (!$res['ok'] || !is_array($res['result'])) {
+            return ['auto' => '', 'auto_on' => false, 'auto_spec' => '', 'auto_id' => -1];
+        }
+        foreach ((array) ($res['result']['jobs'] ?? []) as $job) {
+            foreach ((array) ($job['calls'] ?? []) as $call) {
+                if (strtolower((string) ($call['method'] ?? '')) === 'shelly.update') {
+                    $stage = strtolower((string) ($call['params']['stage'] ?? 'stable'));
+                    return ['auto' => $stage === 'beta' ? 'beta' : 'stable', 'auto_on' => (bool) ($job['enable'] ?? true),
+                        'auto_spec' => (string) ($job['timespec'] ?? ''), 'auto_id' => (int) ($job['id'] ?? -1)];
+                }
+            }
+        }
+        return ['auto' => 'off', 'auto_on' => false, 'auto_spec' => '', 'auto_id' => -1];
+    }
+
+    private function AutoText(array $e): string
+    {
+        switch ($e['auto']) {
+            case 'off':
+                return 'Aus';
+            case 'stable':
+            case 'beta':
+                return ($e['auto'] === 'beta' ? 'Beta' : 'Stable') . ($e['auto_on'] ? '' : ' (pausiert)');
+        }
+        return '';
     }
 
     // ---------------------------------------------------------------- Updates
@@ -808,6 +850,7 @@ class ShellyFWCheck extends IPSModule
     {
         return ['id' => '', 'name' => '', 'model' => '', 'gen' => 0, 'ver' => '', 'avail' => '', 'auth' => false,
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
+            'auto' => '', 'auto_on' => false, 'auto_spec' => '', 'auto_id' => -1,
             'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0];
     }
 
@@ -920,6 +963,7 @@ class ShellyFWCheck extends IPSModule
                 'Model'     => $e['model'],
                 'Installed' => $e['ver'],
                 'Available' => $e['avail'],
+                'Auto'      => $this->AutoText($e),
                 'State'     => $this->StateText($e),
                 'rowColor'  => $colors[$this->StateKind($e)]
             ];
@@ -1008,14 +1052,14 @@ class ShellyFWCheck extends IPSModule
         $colors = [0 => '', 1 => '#E0A800', 2 => '#4A90D9', 3 => '#D9534F', 4 => '#3C9A3C'];
         $cell = 'padding:4px 10px;text-align:left;border-bottom:1px solid rgba(128,128,128,0.3);';
         $html = '<table style="width:100%;border-collapse:collapse;font-size:0.9em;"><tr>';
-        foreach (['Gerät', 'Modell', 'Installiert', 'Verfügbar', 'Status'] as $head) {
+        foreach (['Gerät', 'Modell', 'Installiert', 'Verfügbar', 'Auto-Update', 'Status'] as $head) {
             $html .= '<th style="' . $cell . '">' . $head . '</th>';
         }
         $html .= '</tr>';
         foreach ($items as [$kind, $name, $e]) {
             $style = $colors[$kind] !== '' ? 'color:' . $colors[$kind] . ';font-weight:bold;' : '';
             $html .= '<tr>';
-            foreach ([$name, $e['model'], $e['ver'], $e['avail'] !== '' ? $e['avail'] : '–'] as $text) {
+            foreach ([$name, $e['model'], $e['ver'], $e['avail'] !== '' ? $e['avail'] : '–', $this->AutoText($e)] as $text) {
                 $html .= '<td style="' . $cell . '">' . htmlspecialchars((string) $text) . '</td>';
             }
             $html .= '<td style="' . $cell . $style . '">' . htmlspecialchars($this->StateText($e)) . '</td></tr>';

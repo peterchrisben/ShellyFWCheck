@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 7 (16.11.2026)
+
+#### Neu
+- Spalte „Auto-Update“ in der Übersicht und in der Tabelle: zeigt, ob im Gerät das automatische Firmware-Update eingeschaltet ist (Aus / Stable / Beta). Nur Anzeige; `SFW_GetDevices` liefert zusätzlich `autoUpdate` und `autoUpdateSchedule`.
+
 ### Build 6 (16.11.2026)
 
 #### Neu

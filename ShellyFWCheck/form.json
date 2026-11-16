@@ -212,6 +212,12 @@
           "add": ""
         },
         {
+          "caption": "Auto-Update",
+          "name": "Auto",
+          "width": "130px",
+          "add": ""
+        },
+        {
           "caption": "Status",
           "name": "State",
           "width": "auto",

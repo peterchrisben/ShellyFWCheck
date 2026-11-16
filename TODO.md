@@ -16,3 +16,4 @@
 | Link auf die Weboberfläche | Klick auf eine IP-Adresse in der Übersicht – öffnet sich das richtige Gerät (auch bei nicht markierter Zeile)? | Build 4 | offen |
 | Meldung bei „Jetzt prüfen“ | Erscheint „Abfrage läuft …“ sofort und danach „Abfrage fertig: …“? | Build 5 | ok (16.11., Meldung erscheint während der Abfrage) |
 | Update in mehreren Schritten | Gerät mit Zwischenschritt (wie S2PMG3 2.1.1 → 2.2.0): stößt das Modul nach ca. 1–2 Minuten selbst „Schritt 2“ an? | Build 6, beim nächsten solchen Update | offen (von Hand bestätigt 16.11.: zweiter Anstoß bringt 2.2.0 in 2 Minuten) |
+| Spalte „Auto-Update“ | An einem Gerät in der Weboberfläche „Enable update to stable version“ speichern, „Jetzt prüfen“ – zeigt die Zeile „Stable“? Debug-Zeile `Schedule.List` an Claude schicken | Build 7 | offen |
