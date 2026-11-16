@@ -18,6 +18,7 @@ class ShellyFWCheck extends IPSModule
     private const MAX_CHAIN = 5;            // höchstens so viele Folge-Updates hintereinander
     private const SCAN_MAX = 1024;          // höchstens so viele Adressen je Suchbereich
     private const HISTORY_MAX = 50;         // so viele Einträge behält der Update-Verlauf
+    private const BATTERY_VERIFY_MAX = 86400; // Batteriegeräte: so lange wird auf die Bestätigung beim Aufwachen gewartet
 
     public function Create()
     {
@@ -39,6 +40,7 @@ class ShellyFWCheck extends IPSModule
         $this->RegisterTimer('Check', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'TimerCheck\', \'\');');
         $this->RegisterTimer('Queue', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'TimerQueue\', \'\');');
         $this->RegisterTimer('Verify', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'TimerVerify\', \'\');');
+        $this->RegisterTimer('Wake', 0, 'IPS_RequestAction($_IPS[\'TARGET\'], \'TimerWake\', \'\');');
     }
 
     public function ApplyChanges()
@@ -69,16 +71,41 @@ class ShellyFWCheck extends IPSModule
             $this->EnableAction('Command');
         }
 
-        // Gewählte Visualisierung als Referenz anmelden (Symcon warnt dann, bevor sie gelöscht wird)
+        // Fremde Objekte als Referenz anmelden (Symcon warnt dann, bevor sie gelöscht werden):
+        // gewählte Visualisierung und die Wach-Signale der Batteriegeräte
         $visu = $this->ReadPropertyInteger('NotifyVisu');
-        foreach ($this->GetReferenceList() as $ref) {
-            if ($ref !== $visu) {
+        $wanted = $visu >= 10000 ? [$visu] : [];
+        $wake = [];
+        foreach ($this->DeviceRows() as $row) {
+            if ($row['Active'] && $row['Battery'] && $row['WakeVar'] >= 10000) {
+                $wanted[] = $row['WakeVar'];
+                $wake[] = $row['WakeVar'];
+            }
+        }
+        $wanted = array_values(array_unique($wanted));
+        $known = $this->GetReferenceList();
+        foreach ($known as $ref) {
+            if (!in_array($ref, $wanted, true)) {
                 $this->UnregisterReference($ref);
             }
         }
-        if ($visu >= 10000) {
-            $this->RegisterReference($visu);
+        foreach ($wanted as $ref) {
+            if (!in_array($ref, $known, true)) {
+                $this->RegisterReference($ref);
+            }
         }
+        // Wach-Signal: wird die Variable aktualisiert, ist das Batteriegerät gerade wach
+        foreach ($this->GetMessageList() as $sender => $messages) {
+            if (in_array(VM_UPDATE, $messages, true) && !in_array((int) $sender, $wake, true)) {
+                $this->UnregisterMessage((int) $sender, VM_UPDATE);
+            }
+        }
+        foreach (array_unique($wake) as $var) {
+            if (IPS_VariableExists($var)) {
+                $this->RegisterMessage($var, VM_UPDATE);
+            }
+        }
+        $this->SetBuffer('WakeHosts', '[]');
 
         // Merker von Geräten entfernen, die nicht mehr in der Liste stehen
         $state = $this->ReadState();
@@ -87,7 +114,13 @@ class ShellyFWCheck extends IPSModule
             $keys[$this->HostKey($row['Host'])] = true;
         }
         $pruned = array_intersect_key($state, $keys);
-        if (count($pruned) !== count($state)) {
+        foreach ($this->DeviceRows() as $row) {
+            $k = $this->HostKey($row['Host']);
+            if (isset($pruned[$k]) && $pruned[$k]['pending'] && (!$row['Battery'] || !$row['Active'])) {
+                $pruned[$k]['pending'] = false;
+            }
+        }
+        if ($pruned !== $state) {
             $this->WriteState($pruned);
         }
         $this->SetBuffer('Queue', '[]');
@@ -113,7 +146,45 @@ class ShellyFWCheck extends IPSModule
     {
         if ($Message === IPS_KERNELSTARTED) {
             $this->ApplyChanges();
+        } elseif ($Message === VM_UPDATE) {
+            $this->WakeUp((int) $SenderID);
         }
+    }
+
+    /**
+     * Wach-Signal eines Batteriegeräts: Abfrage nur dieses Geräts kurz danach (nicht hier im Thread des Absenders).
+     * Mehrere Werte kommen beim Aufwachen fast gleichzeitig – je Gerät höchstens eine Abfrage pro WakeGap().
+     */
+    private function WakeUp(int $varID): void
+    {
+        $seen = json_decode($this->GetBuffer('WakeSeen'), true);
+        $seen = is_array($seen) ? $seen : [];
+        $hosts = json_decode($this->GetBuffer('WakeHosts'), true);
+        $hosts = is_array($hosts) ? $hosts : [];
+        $now = time();
+        foreach ($this->ActiveRows() as $row) {
+            if (!$row['Battery'] || $row['WakeVar'] !== $varID) {
+                continue;
+            }
+            $k = $this->HostKey($row['Host']);
+            if ($now - (int) ($seen[$k] ?? 0) < $this->WakeGap() || in_array($k, $hosts, true)) {
+                continue;
+            }
+            $seen[$k] = $now;
+            $hosts[] = $k;
+            $this->SendDebug('Wach-Signal', $row['Host'] . ' (Variable ' . $varID . ')', 0);
+        }
+        $this->SetBuffer('WakeSeen', json_encode($seen));
+        $this->SetBuffer('WakeHosts', json_encode($hosts));
+        if (count($hosts) > 0) {
+            $this->SetTimerInterval('Wake', 200);
+        }
+    }
+
+    /** Mindestabstand (Sekunden) zwischen zwei Abfragen desselben Batteriegeräts durch das Wach-Signal. */
+    protected function WakeGap(): int
+    {
+        return 30;
     }
 
     public function RequestAction($Ident, $Value)
@@ -125,6 +196,16 @@ class ShellyFWCheck extends IPSModule
                 break;
             case 'TimerQueue':
                 $this->WorkQueue();
+                break;
+            case 'TimerWake':
+                $this->SetTimerInterval('Wake', 0);
+                $hosts = json_decode($this->GetBuffer('WakeHosts'), true);
+                $this->SetBuffer('WakeHosts', '[]');
+                if (is_array($hosts) && count($hosts) > 0 && !$this->RunCheck($hosts, true)) {
+                    // gerade läuft eine volle Abfrage – gleich noch einmal versuchen
+                    $this->SetBuffer('WakeHosts', json_encode($hosts));
+                    $this->SetTimerInterval('Wake', 2000);
+                }
                 break;
             case 'TimerVerify':
                 $this->CheckAll();
@@ -194,16 +275,33 @@ class ShellyFWCheck extends IPSModule
     /** Alle aktiven Geräte abfragen: installierte Version und verfügbares Update. */
     public function CheckAll(): bool
     {
+        return $this->RunCheck(null, false);
+    }
+
+    /**
+     * Abfrage aller aktiven Geräte ($only = null) oder nur der genannten (Host-Schlüssel, z. B. beim Wach-Signal).
+     * $quiet: keine Meldungen im Formular (Abfrage im Hintergrund). false = gerade läuft schon eine Abfrage.
+     */
+    private function RunCheck(?array $only, bool $quiet): bool
+    {
         $key = 'ShellyFWCheck' . $this->InstanceID . '_Check';
         if (!IPS_SemaphoreEnter($key, 100)) {
-            $this->ShowResult($this->T('Abfrage läuft bereits …'));
+            if (!$quiet) {
+                $this->ShowResult($this->T('Abfrage läuft bereits …'));
+            }
             return false;
         }
         try {
             $rows = $this->ActiveRows();
-            $this->ShowResult($this->T('Abfrage läuft … (%d Geräte, kann bis zu einer halben Minute dauern)', count($rows)));
+            if ($only !== null) {
+                $rows = array_values(array_filter($rows, fn (array $r): bool => in_array($this->HostKey($r['Host']), $only, true)));
+            }
+            if (!$quiet) {
+                $this->ShowResult($this->T('Abfrage läuft … (%d Geräte, kann bis zu einer halben Minute dauern)', count($rows)));
+            }
             $state = $this->ReadState();
             $now = time();
+            $fast = [];       // Batteriegeräte: nur die schnelle Abfrage, solange sie wach sind
 
             // 1. Schritt: /shelly – geht ohne Anmeldung und liefert Name, Modell, Version
             $requests = [];
@@ -223,6 +321,7 @@ class ShellyFWCheck extends IPSModule
                 $info = $infos[$k] ?? ['code' => 0, 'body' => ''];
                 $data = $info['code'] === 200 ? $this->DecodeJson($info['body']) : null;
                 $e['checked'] = $now;
+                $e['battery'] = $row['Battery'];
                 if (!is_array($data)) {
                     $e['online'] = false;
                     $e['err'] = $row['Battery'] ? 'sleep' : 'offline';   // Batteriegeräte schlafen meist – kein Fehler
@@ -275,7 +374,7 @@ class ShellyFWCheck extends IPSModule
                         } elseif ($now - $e['upd_step'] >= $this->StepWait()) {
                             $again[$k] = $row;
                         }
-                    } elseif ($now - $e['upd_start'] > self::VERIFY_MAX) {
+                    } elseif ($now - $e['upd_start'] > ($row['Battery'] ? self::BATTERY_VERIFY_MAX : self::VERIFY_MAX)) {
                         $this->LogMessage($this->T('%s: Update nicht bestätigt – Version ist weiter %s', $e['name'], $e['ver']), KL_WARNING);
                         $e['upd_start'] = 0;
                         $e['note'] = 'unconfirmed|' . $e['ver'];
@@ -287,6 +386,13 @@ class ShellyFWCheck extends IPSModule
                     // fertig: gleich nachsehen, ob es ein weiteres Update gibt (Shelly aktualisiert teils in Stufen)
                 }
                 $state[$k] = $e;
+                if ($row['Battery']) {
+                    // Sys.GetStatus antwortet sofort mit den Updates, die sich das Gerät selbst gemerkt hat (alle 24 h erneuert).
+                    // Shelly.CheckForUpdate fragt beim Hersteller nach und dauert länger, als ein Batteriegerät wach bleibt.
+                    $fast[$k] = ['host' => $row['Host'], 'method' => 'Sys.GetStatus', 'params' => [],
+                        'timeout' => 5, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
+                    continue;
+                }
                 $calls[$k] = ['host' => $row['Host'], 'method' => 'Shelly.CheckForUpdate', 'params' => [],
                     'timeout' => 45, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
                 // Zeitpläne lesen: das automatische Update des Geräts ist ein Zeitplan, der Shelly.Update aufruft
@@ -296,10 +402,58 @@ class ShellyFWCheck extends IPSModule
 
             // Update läuft und Gerät startet gerade neu → nicht als Fehler zeigen
             foreach ($state as $k => $e) {
-                if (($e['upd_start'] ?? 0) > 0 && !$e['online'] && $now - $e['upd_start'] > self::VERIFY_MAX) {
+                if (($e['upd_start'] ?? 0) > 0 && !$e['online'] && $now - $e['upd_start'] > ($e['battery'] ? self::BATTERY_VERIFY_MAX : self::VERIFY_MAX)) {
                     $state[$k]['upd_start'] = 0;
                     $state[$k]['note'] = 'unreachable|';
                 }
+            }
+
+            // Batteriegeräte zuerst – sie schlafen bald wieder ein
+            $wakeStart = [];
+            foreach ($this->RpcBatch($fast) as $k => $res) {
+                $e = $state[$k];
+                if (!$res['ok']) {
+                    if ($res['err'] === 'offline') {
+                        $e['online'] = false;
+                        $e['err'] = 'sleep';   // schon wieder eingeschlafen – kein Fehler
+                    } else {
+                        $e['err'] = $res['err'];
+                        $e['msg'] = $res['msg'];
+                    }
+                    $state[$k] = $e;
+                    continue;
+                }
+                $e = $this->ApplyAvail($e, (string) ($res['result']['available_updates']['stable']['version'] ?? ''), $k, $found);
+                if ($e['pending'] && $e['upd_start'] === 0) {
+                    if ($e['avail'] !== '') {
+                        $wakeStart[$k] = ['host' => $e['host'] ?? '', 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
+                            'timeout' => 10, 'password' => '', 'auth' => $e['auth']];
+                    } else {
+                        $e['pending'] = false;   // nichts mehr zu tun (z. B. inzwischen anders aktualisiert)
+                    }
+                }
+                $state[$k] = $e;
+            }
+            // vorgemerkte Updates sofort starten, solange das Gerät wach ist
+            foreach ($rows as $row) {
+                $k = $this->HostKey($row['Host']);
+                if (isset($wakeStart[$k])) {
+                    $wakeStart[$k]['host'] = $row['Host'];
+                    $wakeStart[$k]['password'] = $this->PasswordFor($row);
+                }
+            }
+            foreach ($this->RpcBatch($wakeStart) as $k => $res) {
+                $e = $state[$k];
+                if ($res['ok']) {
+                    $e = $this->MarkStarted($e, $now);
+                    unset($found[$k]);
+                    $this->LogMessage($this->T('%s: Batteriegerät ist wach – vorgemerktes Update auf %s gestartet', $e['name'], $e['upd_target']), KL_NOTIFY);
+                    $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
+                } else {
+                    // bleibt vorgemerkt und wird beim nächsten Aufwachen erneut versucht
+                    $this->LogMessage($this->T('%s: vorgemerktes Update nicht gestartet – %s', $e['name'], $this->ErrorText($res)), KL_WARNING);
+                }
+                $state[$k] = $e;
             }
 
             // Mehrstufige Updates: nächsten Schritt anstoßen
@@ -337,18 +491,7 @@ class ShellyFWCheck extends IPSModule
                     $e['err'] = $res['err'];
                     $e['msg'] = $res['msg'];
                 } else {
-                    $avail = (string) ($res['result']['stable']['version'] ?? '');
-                    if ($avail === $e['ver']) {
-                        $avail = '';
-                    }
-                    if ($avail !== '' && $e['avail'] !== $avail) {
-                        $this->LogMessage($this->T('%s: Firmware %s verfügbar (installiert %s)', $e['name'], $avail, $e['ver']), KL_NOTIFY);
-                        if (!$this->NoteIsDone($e['note'])) {
-                            $e['note'] = '';
-                        }
-                        $found[$k] = $e['name'] . ' (' . $avail . ')';
-                    }
-                    $e['avail'] = $avail;
+                    $e = $this->ApplyAvail($e, (string) ($res['result']['stable']['version'] ?? ''), $k, $found);
                 }
                 $state[$k] = $e;
             }
@@ -367,14 +510,9 @@ class ShellyFWCheck extends IPSModule
                 foreach ($this->RpcBatch($next) as $k => $res) {
                     $e = $state[$k];
                     if ($res['ok']) {
-                        $e['upd_chain']++;
-                        $e['upd_start'] = $now;
-                        $e['upd_from'] = $e['ver'];
-                        $e['upd_target'] = $e['avail'];
-                        $e['upd_slot'] = $e['slot'];
-                        $e['upd_tries'] = 1;
-                        $e['upd_step'] = 0;
-                        $e['note'] = '';
+                        $chain = $e['upd_chain'] + 1;
+                        $e = $this->MarkStarted($e, $now);
+                        $e['upd_chain'] = $chain;
                         unset($found[$k]);   // läuft von selbst weiter – keine Benachrichtigung nötig
                         $this->LogMessage($this->T('%s: Folge-Update von %s auf %s gestartet', $e['name'], $e['ver'], $e['avail']), KL_NOTIFY);
                     } else {
@@ -388,12 +526,17 @@ class ShellyFWCheck extends IPSModule
             }
 
             $this->WriteState($state);
-            $this->WriteAttributeInteger('LastCheck', $now);
+            if ($only === null) {
+                $this->WriteAttributeInteger('LastCheck', $now);
+            }
             $this->AddHistory($history);
             $this->PublishValues();
             $this->RefreshForm();
             if (count($found) > 0) {
                 $this->Notify($this->T('Shelly-Firmware'), count($found) === 1 ? $this->T('Update verfügbar: %s', implode(', ', $found)) : $this->T('%d Updates verfügbar: %s', count($found), implode(', ', $found)));
+            }
+            if ($quiet) {
+                return true;
             }
             $c = $this->Counts();
             $this->ShowResult($this->T('Abfrage fertig: %d Geräte geprüft', $c['total']) . ', '
@@ -404,6 +547,38 @@ class ShellyFWCheck extends IPSModule
         } finally {
             IPS_SemaphoreLeave($key);
         }
+    }
+
+    /** Gemeldete Version eintragen; neu gefundene Updates landen in $found (Benachrichtigung). */
+    private function ApplyAvail(array $e, string $avail, string $k, array &$found): array
+    {
+        if ($avail === $e['ver']) {
+            $avail = '';
+        }
+        if ($avail !== '' && $e['avail'] !== $avail) {
+            $this->LogMessage($this->T('%s: Firmware %s verfügbar (installiert %s)', $e['name'], $avail, $e['ver']), KL_NOTIFY);
+            if (!$this->NoteIsDone($e['note'])) {
+                $e['note'] = '';
+            }
+            $found[$k] = $e['name'] . ' (' . $avail . ')';
+        }
+        $e['avail'] = $avail;
+        return $e;
+    }
+
+    /** Merker setzen: Update auf die verfügbare Version wurde gerade angestoßen. */
+    private function MarkStarted(array $e, int $now): array
+    {
+        $e['upd_start'] = $now;
+        $e['upd_from'] = $e['ver'];
+        $e['upd_target'] = $e['avail'];
+        $e['upd_slot'] = $e['slot'];
+        $e['upd_tries'] = 1;
+        $e['upd_step'] = 0;
+        $e['upd_chain'] = 0;
+        $e['pending'] = false;
+        $e['note'] = '';
+        return $e;
     }
 
     /** Update für ein Gerät starten (Host = IP-Adresse wie in der Liste). */
@@ -442,14 +617,29 @@ class ShellyFWCheck extends IPSModule
     {
         $state = $this->ReadState();
         $queue = [];
+        $marked = [];
         foreach ($this->ActiveRows() as $row) {
             $k = $this->HostKey($row['Host']);
             if ($only !== null && !in_array($k, $only, true)) {
                 continue;
             }
-            if ($this->CanUpdate($state[$k] ?? null)) {
+            if (!$this->CanUpdate($state[$k] ?? null)) {
+                continue;
+            }
+            if ($state[$k]['err'] === 'sleep') {
+                $marked[] = $row['Host'];   // schläft: nur vormerken, kein Abstand nötig
+            } else {
                 $queue[] = $row['Host'];
             }
+        }
+        foreach ($marked as $host) {
+            $this->StartUpdate($host, $message);
+        }
+        if (count($queue) === 0 && count($marked) > 0) {
+            $this->ShowResult(count($marked) === 1 ? (string) $message
+                : $this->T('%d Batteriegeräte schlafen – ihre Updates sind vorgemerkt und starten beim nächsten Aufwachen.', count($marked)));
+            $this->RefreshForm();
+            return count($marked);
         }
         if (count($queue) === 0) {
             $this->ShowResult($only === null
@@ -457,7 +647,7 @@ class ShellyFWCheck extends IPSModule
                 : $this->T('Für die ausgewählten Geräte ist kein Update verfügbar (oder es läuft schon).'));
             return 0;
         }
-        $count = count($queue);
+        $count = count($queue) + count($marked);
         $gap = max(5, $this->ReadPropertyInteger('UpdateGap'));
         $this->SetBuffer('Selected', '[]');
         $this->SetBuffer('Queue', json_encode($queue));
@@ -470,7 +660,10 @@ class ShellyFWCheck extends IPSModule
 
     private function CanUpdate(?array $e): bool
     {
-        return $e !== null && $e['online'] && $e['err'] === '' && $e['avail'] !== '' && $e['upd_start'] === 0;
+        if ($e === null || $e['avail'] === '' || $e['upd_start'] > 0 || $e['pending']) {
+            return false;
+        }
+        return ($e['online'] && $e['err'] === '') || ($e['battery'] && $e['err'] === 'sleep');
     }
 
     /** Shellys per mDNS suchen und in die Liste eintragen (wirksam erst nach „Änderungen übernehmen“). */
@@ -526,7 +719,7 @@ class ShellyFWCheck extends IPSModule
                 continue;
             }
             $byHost[$k] = count($list);
-            $list[] = ['Active' => true, 'Name' => $name, 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'Battery' => false, 'rowColor' => '#C0C0FF'];
+            $list[] = ['Active' => true, 'Name' => $name, 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'Battery' => false, 'WakeVar' => 0, 'rowColor' => '#C0C0FF'];
             $new++;
         }
         if ($new + $moved > 0) {
@@ -673,6 +866,8 @@ class ShellyFWCheck extends IPSModule
                 'installed' => $e['ver'],
                 'available' => $e['avail'],
                 'updating'  => $e['upd_start'] > 0,
+                'battery'   => $row['Battery'],
+                'pending'   => $e['pending'],
                 'autoUpdate' => $e['auto'] === '' ? 'unknown' : $e['auto'],
                 'autoUpdateSchedule' => $e['auto_spec'],
                 'status'    => $this->StateText($e)
@@ -867,8 +1062,26 @@ class ShellyFWCheck extends IPSModule
             $message = $this->T('%s: kein Update bekannt – ggf. erst „Jetzt prüfen“.', $e['name']);
             return false;
         }
-        $res = $this->RpcBatch([$k => ['host' => $row['Host'], 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
-            'timeout' => 20, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']]])[$k];
+        if ($e['pending']) {
+            $message = $this->T('%s: Update auf %s ist schon vorgemerkt und startet beim nächsten Aufwachen.', $e['name'], $e['avail']);
+            return true;
+        }
+        $res = ['ok' => false, 'err' => 'offline', 'msg' => ''];
+        if (!$row['Battery'] || $e['err'] !== 'sleep') {
+            $res = $this->RpcBatch([$k => ['host' => $row['Host'], 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
+                'timeout' => 20, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']]])[$k];
+        }
+        if (!$res['ok'] && $row['Battery'] && $res['err'] === 'offline') {
+            // Batteriegerät schläft: Update vormerken, es startet beim nächsten Aufwachen
+            $e['pending'] = true;
+            $e['online'] = false;
+            $e['err'] = 'sleep';
+            $state[$k] = $e;
+            $this->WriteState($state);
+            $message = $this->T('%s: Batteriegerät schläft – Update auf %s ist vorgemerkt und startet beim nächsten Aufwachen.', $e['name'], $e['avail']);
+            $this->LogMessage($message, KL_NOTIFY);
+            return true;
+        }
         if (!$res['ok']) {
             $e['err'] = $res['err'];
             $e['msg'] = $res['msg'];
@@ -878,14 +1091,7 @@ class ShellyFWCheck extends IPSModule
             $this->LogMessage($message, KL_WARNING);
             return false;
         }
-        $e['upd_start'] = time();
-        $e['upd_from'] = $e['ver'];
-        $e['upd_target'] = $e['avail'];
-        $e['upd_slot'] = $e['slot'];
-        $e['upd_tries'] = 1;
-        $e['upd_step'] = 0;
-        $e['upd_chain'] = 0;
-        $e['note'] = '';
+        $e = $this->MarkStarted($e, time());
         $state[$k] = $e;
         $this->WriteState($state);
         $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
@@ -950,7 +1156,8 @@ class ShellyFWCheck extends IPSModule
             return true;
         }
         foreach ($this->ReadState() as $e) {
-            if ($e['upd_start'] > 0) {
+            // Batteriegeräte schlafen nach dem Update meist gleich wieder: danach bestätigt das Wach-Signal oder die nächste Prüfung
+            if ($e['upd_start'] > 0 && (!$e['battery'] || time() - $e['upd_start'] <= self::VERIFY_MAX)) {
                 return true;
             }
         }
@@ -1212,7 +1419,8 @@ class ShellyFWCheck extends IPSModule
                 'Host'        => $host,
                 'OwnPassword' => (bool) ($r['OwnPassword'] ?? false),
                 'Password'    => (string) ($r['Password'] ?? ''),
-                'Battery'     => (bool) ($r['Battery'] ?? false)
+                'Battery'     => (bool) ($r['Battery'] ?? false),
+                'WakeVar'     => (int) ($r['WakeVar'] ?? 0)
             ];
         }
         return array_values($rows);
@@ -1246,7 +1454,7 @@ class ShellyFWCheck extends IPSModule
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
             'auto' => '', 'auto_spec' => '', 'auto_jobs' => [],
             'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0,
-            'upd_chain' => 0];
+            'upd_chain' => 0, 'battery' => false, 'pending' => false];
     }
 
     private function ReadState(): array
@@ -1311,7 +1519,16 @@ class ShellyFWCheck extends IPSModule
             if ($minutes >= 3 && $e['online']) {
                 $parts[] = $this->T('Gerät meldet noch %s – Updates in mehreren Schritten dauern länger', $e['ver']);
             }
+            if ($e['battery'] && !$e['online']) {
+                $parts[] = $this->T('Bestätigung beim nächsten Aufwachen');
+            }
             return $this->T('Update auf %s läuft …', $e['upd_target']) . ' (' . implode(', ', $parts) . ')';
+        }
+        if ($e['pending']) {
+            return $this->T('Update auf %s vorgemerkt – startet beim nächsten Aufwachen', $e['avail']);
+        }
+        if ($e['err'] === 'sleep' && $e['avail'] !== '') {
+            return $this->T('Schläft – Update auf %s verfügbar (zuletzt wach %s)', $e['avail'], date('d.m. H:i', $e['seen']));
         }
         switch ($e['err']) {
             case 'offline':
@@ -1346,11 +1563,11 @@ class ShellyFWCheck extends IPSModule
     /** 0 normal, 1 Update verfügbar, 2 Update läuft, 3 Fehler, 4 gerade aktualisiert */
     private function StateKind(array $e): int
     {
-        if ($e['upd_start'] > 0) {
+        if ($e['upd_start'] > 0 || $e['pending']) {
             return 2;
         }
         if ($e['err'] === 'sleep') {
-            return 0;
+            return $e['avail'] !== '' ? 1 : 0;
         }
         if ($e['err'] !== '') {
             return 3;
@@ -1375,6 +1592,7 @@ class ShellyFWCheck extends IPSModule
                 'OwnPassword' => $row['OwnPassword'],
                 'Password'    => $row['Password'],
                 'Battery'     => $row['Battery'],
+                'WakeVar'     => $row['WakeVar'],
                 'rowColor'    => ''
             ];
         }
@@ -1395,10 +1613,11 @@ class ShellyFWCheck extends IPSModule
             }
             $k = $this->HostKey($row['Host']);
             $e = $state[$k] ?? $this->EmptyEntry();
-            $can = $e['online'] && $e['err'] === '' && $e['gen'] >= 2;
+            // Haken bei erreichbaren Geräten – und bei schlafenden Batteriegeräten (Update wird dann vorgemerkt)
+            $can = (($e['online'] && $e['err'] === '') || ($row['Battery'] && $e['err'] === 'sleep')) && $e['gen'] >= 2 && !$e['pending'];
             $list[] = [
                 'Select'    => $can && in_array($k, $selected, true),
-                'editable'  => $can,   // Haken nur bei erreichbaren Geräten
+                'editable'  => $can,
                 'Name'      => $e['name'],
                 'Host'      => $row['Host'],
                 'Model'     => $e['model'],
@@ -1426,11 +1645,11 @@ class ShellyFWCheck extends IPSModule
                 $c['running']++;
             } elseif ($e['err'] === 'offline') {
                 $c['offline']++;
-            } elseif ($e['err'] === 'sleep') {
-                $c['sleeping']++;
-            } elseif ($e['err'] === '' && $e['avail'] !== '') {
+            } elseif (($e['err'] === '' || $e['err'] === 'sleep') && $e['avail'] !== '') {
                 $c['updates']++;
                 $c['names'][] = $e['name'];
+            } elseif ($e['err'] === 'sleep') {
+                $c['sleeping']++;
             } elseif ($e['err'] === '' && $e['checked'] > 0) {
                 $c['ok']++;
             }

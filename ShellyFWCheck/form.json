@@ -1,384 +1,393 @@
 {
-  "elements": [
-    {
-      "type": "Label",
-      "name": "Overview",
-      "caption": ""
-    },
-    {
-      "type": "ExpansionPanel",
-      "name": "PanelPassword",
-      "caption": "Passwort",
-      "expanded": false,
-      "items": [
+    "elements": [
         {
-          "type": "PasswordTextBox",
-          "name": "MasterPassword",
-          "caption": "Master-Passwort (für alle Geräte)",
-          "width": "360px"
+            "type": "Label",
+            "name": "Overview",
+            "caption": ""
         },
         {
-          "type": "Label",
-          "caption": "Gilt für alle Geräte ohne Haken bei „Eigenes PW“. Der Benutzername ist bei Shelly immer „admin“. Geräte ohne Passwortschutz brauchen nichts."
+            "type": "ExpansionPanel",
+            "name": "PanelPassword",
+            "caption": "Passwort",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "PasswordTextBox",
+                    "name": "MasterPassword",
+                    "caption": "Master-Passwort (für alle Geräte)",
+                    "width": "360px"
+                },
+                {
+                    "type": "Label",
+                    "caption": "Gilt für alle Geräte ohne Haken bei „Eigenes PW“. Der Benutzername ist bei Shelly immer „admin“. Geräte ohne Passwortschutz brauchen nichts."
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "name": "PanelDevices",
+            "caption": "Geräte verwalten",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "List",
+                    "name": "Devices",
+                    "caption": "",
+                    "rowCount": 12,
+                    "add": true,
+                    "delete": true,
+                    "loadValuesFromConfiguration": false,
+                    "columns": [
+                        {
+                            "caption": "Aktiv",
+                            "name": "Active",
+                            "width": "70px",
+                            "add": true,
+                            "edit": {
+                                "type": "CheckBox"
+                            }
+                        },
+                        {
+                            "caption": "Name",
+                            "name": "Name",
+                            "width": "auto",
+                            "add": "",
+                            "save": false
+                        },
+                        {
+                            "caption": "IP-Adresse",
+                            "name": "Host",
+                            "width": "180px",
+                            "add": "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        },
+                        {
+                            "caption": "Eigenes PW",
+                            "name": "OwnPassword",
+                            "width": "110px",
+                            "add": false,
+                            "edit": {
+                                "type": "CheckBox"
+                            }
+                        },
+                        {
+                            "caption": "Passwort",
+                            "name": "Password",
+                            "width": "180px",
+                            "add": "",
+                            "edit": {
+                                "type": "PasswordTextBox"
+                            }
+                        },
+                        {
+                            "caption": "Batterie",
+                            "name": "Battery",
+                            "width": "100px",
+                            "add": false,
+                            "edit": {
+                                "type": "CheckBox"
+                            }
+                        },
+                        {
+                            "caption": "Wach-Signal (Batterie)",
+                            "name": "WakeVar",
+                            "width": "250px",
+                            "add": 0,
+                            "edit": {
+                                "type": "SelectVariable"
+                            }
+                        }
+                    ],
+                    "values": []
+                },
+                {
+                    "type": "Label",
+                    "caption": "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Haken bei „Batterie“: Das Gerät schläft meist und wird dann als „Schläft“ statt als Fehler gezeigt. Wach-Signal (nur Batteriegeräte): eine Variable, die beim Aufwachen des Geräts neu geschrieben wird, z. B. die Temperatur aus dem Shelly-Modul – dann fragt das Modul das Gerät sofort ab und startet ein vorgemerktes Update. Ob ein Passwort stimmt, zeigt die Übersicht unten nach „Änderungen übernehmen“."
+                },
+                {
+                    "type": "List",
+                    "name": "ScanRanges",
+                    "caption": "Weitere Netze durchsuchen (zusätzlich zum eigenen Netz)",
+                    "rowCount": 4,
+                    "add": true,
+                    "delete": true,
+                    "columns": [
+                        {
+                            "caption": "Von (erste IP-Adresse)",
+                            "name": "From",
+                            "width": "220px",
+                            "add": "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        },
+                        {
+                            "caption": "Bis (letzte IP-Adresse)",
+                            "name": "To",
+                            "width": "220px",
+                            "add": "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        },
+                        {
+                            "caption": "Bezeichnung",
+                            "name": "Label",
+                            "width": "auto",
+                            "add": "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "Label",
+                    "caption": "Nur nötig für Shellys in einem anderen Netz als Symcon (z. B. Gäste- oder IoT-Netz). Beispiel: Von 192.168.20.1, Bis 192.168.20.254. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht. Höchstens 1024 Adressen je Zeile. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“."
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "name": "PanelSettings",
+            "caption": "Prüfung, Nachricht und Anzeige",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "CheckInterval",
+                    "caption": "Automatisch prüfen alle (Stunden, 0 = aus)",
+                    "minimum": 0,
+                    "maximum": 720,
+                    "width": "340px"
+                },
+                {
+                    "type": "SelectInstance",
+                    "name": "NotifyVisu",
+                    "caption": "Push-Nachricht bei neuem Update an diese Kachel-Visualisierung (leer = keine Nachricht)",
+                    "width": "700px"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowTable",
+                    "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "name": "PanelUpdates",
+            "caption": "Updates",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "ContinueUpdates",
+                    "caption": "Nach einem Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "VisuCommands",
+                    "caption": "Bedienung aus der Visualisierung freigeben (Variable „Befehl“: Jetzt prüfen / Alle Updates starten)"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "UpdateGap",
+                    "caption": "Pause zwischen zwei Geräten bei mehreren Updates (Sekunden)",
+                    "minimum": 5,
+                    "maximum": 600,
+                    "width": "440px"
+                },
+                {
+                    "type": "Label",
+                    "caption": "Updates werden nie von selbst begonnen – nur über die Knöpfe unten oder per Skript. Ein begonnenes Update führt das Modul zu Ende."
+                }
+            ]
         }
-      ]
-    },
-    {
-      "type": "ExpansionPanel",
-      "name": "PanelDevices",
-      "caption": "Geräte verwalten",
-      "expanded": false,
-      "items": [
+    ],
+    "actions": [
         {
-          "type": "List",
-          "name": "Devices",
-          "caption": "",
-          "rowCount": 12,
-          "add": true,
-          "delete": true,
-          "loadValuesFromConfiguration": false,
-          "columns": [
-            {
-              "caption": "Aktiv",
-              "name": "Active",
-              "width": "70px",
-              "add": true,
-              "edit": {
-                "type": "CheckBox"
-              }
-            },
-            {
-              "caption": "Name",
-              "name": "Name",
-              "width": "auto",
-              "add": "",
-              "save": false
-            },
-            {
-              "caption": "IP-Adresse",
-              "name": "Host",
-              "width": "180px",
-              "add": "",
-              "edit": {
-                "type": "ValidationTextBox"
-              }
-            },
-            {
-              "caption": "Eigenes PW",
-              "name": "OwnPassword",
-              "width": "110px",
-              "add": false,
-              "edit": {
-                "type": "CheckBox"
-              }
-            },
-            {
-              "caption": "Passwort",
-              "name": "Password",
-              "width": "180px",
-              "add": "",
-              "edit": {
-                "type": "PasswordTextBox"
-              }
-            },
-            {
-              "caption": "Batterie",
-              "name": "Battery",
-              "width": "100px",
-              "add": false,
-              "edit": {
-                "type": "CheckBox"
-              }
-            }
-          ],
-          "values": []
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "Button",
+                    "caption": "Jetzt prüfen",
+                    "onClick": "SFW_CheckAll($id);"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Geräte im Netzwerk suchen",
+                    "onClick": "SFW_Discover($id);"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Ausgewählte aktualisieren",
+                    "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_UpdateSelected($id, json_encode($h));",
+                    "confirm": "Updates für die Geräte mit Haken in der Spalte „Auswahl“ starten? Die Geräte starten dabei neu."
+                },
+                {
+                    "type": "Button",
+                    "caption": "Alle Updates starten",
+                    "onClick": "SFW_UpdateAll($id);",
+                    "confirm": "Updates für alle Geräte mit verfügbarem Update nacheinander starten? Die Geräte starten dabei neu."
+                }
+            ]
         },
         {
-          "type": "Label",
-          "caption": "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Haken bei „Batterie“: Das Gerät schläft meist und wird dann als „Schläft“ statt als Fehler gezeigt. Ob ein Passwort stimmt, zeigt die Übersicht unten nach „Änderungen übernehmen“."
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "Auto-Update im Gerät für die Ausgewählten:"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Aus",
+                    "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'off');",
+                    "confirm": "Automatisches Firmware-Update in den ausgewählten Geräten ausschalten? Vorhandene Update-Zeitpläne in diesen Geräten werden entfernt."
+                },
+                {
+                    "type": "Button",
+                    "caption": "Stable (täglich 0 Uhr)",
+                    "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'stable');",
+                    "confirm": "Automatisches Firmware-Update (stabile Version) in den ausgewählten Geräten einschalten? Die Geräte prüfen dann täglich um 0 Uhr selbst und starten bei einem Update neu."
+                },
+                {
+                    "type": "Button",
+                    "caption": "Test-Nachricht senden",
+                    "onClick": "IPS_RequestAction($id, 'TestNotify', '');"
+                }
+            ]
         },
         {
-          "type": "List",
-          "name": "ScanRanges",
-          "caption": "Weitere Netze durchsuchen (zusätzlich zum eigenen Netz)",
-          "rowCount": 4,
-          "add": true,
-          "delete": true,
-          "columns": [
-            {
-              "caption": "Von (erste IP-Adresse)",
-              "name": "From",
-              "width": "220px",
-              "add": "",
-              "edit": {
-                "type": "ValidationTextBox"
-              }
-            },
-            {
-              "caption": "Bis (letzte IP-Adresse)",
-              "name": "To",
-              "width": "220px",
-              "add": "",
-              "edit": {
-                "type": "ValidationTextBox"
-              }
-            },
-            {
-              "caption": "Bezeichnung",
-              "name": "Label",
-              "width": "auto",
-              "add": "",
-              "edit": {
-                "type": "ValidationTextBox"
-              }
-            }
-          ]
+            "type": "Label",
+            "name": "Result",
+            "caption": ""
         },
         {
-          "type": "Label",
-          "caption": "Nur nötig für Shellys in einem anderen Netz als Symcon (z. B. Gäste- oder IoT-Netz). Beispiel: Von 192.168.20.1, Bis 192.168.20.254. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht. Höchstens 1024 Adressen je Zeile. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“."
+            "type": "List",
+            "name": "Status",
+            "caption": "Übersicht",
+            "rowCount": 15,
+            "add": false,
+            "delete": false,
+            "columns": [
+                {
+                    "caption": "Auswahl",
+                    "name": "Select",
+                    "width": "90px",
+                    "add": false,
+                    "edit": {
+                        "type": "CheckBox"
+                    }
+                },
+                {
+                    "caption": "Name",
+                    "name": "Name",
+                    "width": "260px",
+                    "add": ""
+                },
+                {
+                    "caption": "IP-Adresse",
+                    "name": "Host",
+                    "width": "150px",
+                    "add": "",
+                    "onClick": "echo 'http://' . $Status['Host'];",
+                    "link": true
+                },
+                {
+                    "caption": "Modell",
+                    "name": "Model",
+                    "width": "160px",
+                    "add": ""
+                },
+                {
+                    "caption": "Installiert",
+                    "name": "Installed",
+                    "width": "130px",
+                    "add": ""
+                },
+                {
+                    "caption": "Verfügbar",
+                    "name": "Available",
+                    "width": "130px",
+                    "add": ""
+                },
+                {
+                    "caption": "Auto-Update",
+                    "name": "Auto",
+                    "width": "130px",
+                    "add": ""
+                },
+                {
+                    "caption": "Status",
+                    "name": "State",
+                    "width": "auto",
+                    "add": ""
+                }
+            ],
+            "values": [],
+            "onEdit": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } IPS_RequestAction($id, 'Select', json_encode($h));"
+        },
+        {
+            "type": "Label",
+            "caption": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts."
+        },
+        {
+            "type": "ExpansionPanel",
+            "name": "PanelHistory",
+            "caption": "Update-Verlauf",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "List",
+                    "name": "History",
+                    "caption": "",
+                    "rowCount": 10,
+                    "add": false,
+                    "delete": false,
+                    "columns": [
+                        {
+                            "caption": "Zeitpunkt",
+                            "name": "Time",
+                            "width": "170px",
+                            "add": ""
+                        },
+                        {
+                            "caption": "Gerät",
+                            "name": "Name",
+                            "width": "auto",
+                            "add": ""
+                        },
+                        {
+                            "caption": "Von",
+                            "name": "From",
+                            "width": "140px",
+                            "add": ""
+                        },
+                        {
+                            "caption": "Auf",
+                            "name": "To",
+                            "width": "140px",
+                            "add": ""
+                        },
+                        {
+                            "caption": "Ausgelöst durch",
+                            "name": "By",
+                            "width": "240px",
+                            "add": ""
+                        }
+                    ],
+                    "values": []
+                },
+                {
+                    "type": "Label",
+                    "caption": "Die letzten 50 Versionswechsel, neueste zuerst. „Gerät selbst / von außen“ heißt: Auto-Update des Geräts, Weboberfläche oder App."
+                }
+            ]
         }
-      ]
-    },
-    {
-      "type": "ExpansionPanel",
-      "name": "PanelSettings",
-      "caption": "Prüfung, Nachricht und Anzeige",
-      "expanded": false,
-      "items": [
-        {
-          "type": "NumberSpinner",
-          "name": "CheckInterval",
-          "caption": "Automatisch prüfen alle (Stunden, 0 = aus)",
-          "minimum": 0,
-          "maximum": 720,
-          "width": "340px"
-        },
-        {
-          "type": "SelectInstance",
-          "name": "NotifyVisu",
-          "caption": "Push-Nachricht bei neuem Update an diese Kachel-Visualisierung (leer = keine Nachricht)",
-          "width": "700px"
-        },
-        {
-          "type": "CheckBox",
-          "name": "ShowTable",
-          "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen"
-        }
-      ]
-    },
-    {
-      "type": "ExpansionPanel",
-      "name": "PanelUpdates",
-      "caption": "Updates",
-      "expanded": false,
-      "items": [
-        {
-          "type": "CheckBox",
-          "name": "ContinueUpdates",
-          "caption": "Nach einem Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
-        },
-        {
-          "type": "CheckBox",
-          "name": "VisuCommands",
-          "caption": "Bedienung aus der Visualisierung freigeben (Variable „Befehl“: Jetzt prüfen / Alle Updates starten)"
-        },
-        {
-          "type": "NumberSpinner",
-          "name": "UpdateGap",
-          "caption": "Pause zwischen zwei Geräten bei mehreren Updates (Sekunden)",
-          "minimum": 5,
-          "maximum": 600,
-          "width": "440px"
-        },
-        {
-          "type": "Label",
-          "caption": "Updates werden nie von selbst begonnen – nur über die Knöpfe unten oder per Skript. Ein begonnenes Update führt das Modul zu Ende."
-        }
-      ]
-    }
-  ],
-  "actions": [
-    {
-      "type": "RowLayout",
-      "items": [
-        {
-          "type": "Button",
-          "caption": "Jetzt prüfen",
-          "onClick": "SFW_CheckAll($id);"
-        },
-        {
-          "type": "Button",
-          "caption": "Geräte im Netzwerk suchen",
-          "onClick": "SFW_Discover($id);"
-        },
-        {
-          "type": "Button",
-          "caption": "Ausgewählte aktualisieren",
-          "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_UpdateSelected($id, json_encode($h));",
-          "confirm": "Updates für die Geräte mit Haken in der Spalte „Auswahl“ starten? Die Geräte starten dabei neu."
-        },
-        {
-          "type": "Button",
-          "caption": "Alle Updates starten",
-          "onClick": "SFW_UpdateAll($id);",
-          "confirm": "Updates für alle Geräte mit verfügbarem Update nacheinander starten? Die Geräte starten dabei neu."
-        }
-      ]
-    },
-    {
-      "type": "RowLayout",
-      "items": [
-        {
-          "type": "Label",
-          "caption": "Auto-Update im Gerät für die Ausgewählten:"
-        },
-        {
-          "type": "Button",
-          "caption": "Aus",
-          "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'off');",
-          "confirm": "Automatisches Firmware-Update in den ausgewählten Geräten ausschalten? Vorhandene Update-Zeitpläne in diesen Geräten werden entfernt."
-        },
-        {
-          "type": "Button",
-          "caption": "Stable (täglich 0 Uhr)",
-          "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'stable');",
-          "confirm": "Automatisches Firmware-Update (stabile Version) in den ausgewählten Geräten einschalten? Die Geräte prüfen dann täglich um 0 Uhr selbst und starten bei einem Update neu."
-        },
-        {
-          "type": "Button",
-          "caption": "Test-Nachricht senden",
-          "onClick": "IPS_RequestAction($id, 'TestNotify', '');"
-        }
-      ]
-    },
-    {
-      "type": "Label",
-      "name": "Result",
-      "caption": ""
-    },
-    {
-      "type": "List",
-      "name": "Status",
-      "caption": "Übersicht",
-      "rowCount": 15,
-      "add": false,
-      "delete": false,
-      "columns": [
-        {
-          "caption": "Auswahl",
-          "name": "Select",
-          "width": "90px",
-          "add": false,
-          "edit": {
-            "type": "CheckBox"
-          }
-        },
-        {
-          "caption": "Name",
-          "name": "Name",
-          "width": "260px",
-          "add": ""
-        },
-        {
-          "caption": "IP-Adresse",
-          "name": "Host",
-          "width": "150px",
-          "add": "",
-          "onClick": "echo 'http://' . $Status['Host'];",
-          "link": true
-        },
-        {
-          "caption": "Modell",
-          "name": "Model",
-          "width": "160px",
-          "add": ""
-        },
-        {
-          "caption": "Installiert",
-          "name": "Installed",
-          "width": "130px",
-          "add": ""
-        },
-        {
-          "caption": "Verfügbar",
-          "name": "Available",
-          "width": "130px",
-          "add": ""
-        },
-        {
-          "caption": "Auto-Update",
-          "name": "Auto",
-          "width": "130px",
-          "add": ""
-        },
-        {
-          "caption": "Status",
-          "name": "State",
-          "width": "auto",
-          "add": ""
-        }
-      ],
-      "values": [],
-      "onEdit": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } IPS_RequestAction($id, 'Select', json_encode($h));"
-    },
-    {
-      "type": "Label",
-      "caption": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts."
-    },
-    {
-      "type": "ExpansionPanel",
-      "name": "PanelHistory",
-      "caption": "Update-Verlauf",
-      "expanded": false,
-      "items": [
-        {
-          "type": "List",
-          "name": "History",
-          "caption": "",
-          "rowCount": 10,
-          "add": false,
-          "delete": false,
-          "columns": [
-            {
-              "caption": "Zeitpunkt",
-              "name": "Time",
-              "width": "170px",
-              "add": ""
-            },
-            {
-              "caption": "Gerät",
-              "name": "Name",
-              "width": "auto",
-              "add": ""
-            },
-            {
-              "caption": "Von",
-              "name": "From",
-              "width": "140px",
-              "add": ""
-            },
-            {
-              "caption": "Auf",
-              "name": "To",
-              "width": "140px",
-              "add": ""
-            },
-            {
-              "caption": "Ausgelöst durch",
-              "name": "By",
-              "width": "240px",
-              "add": ""
-            }
-          ],
-          "values": []
-        },
-        {
-          "type": "Label",
-          "caption": "Die letzten 50 Versionswechsel, neueste zuerst. „Gerät selbst / von außen“ heißt: Auto-Update des Geräts, Weboberfläche oder App."
-        }
-      ]
-    }
-  ],
-  "status": []
+    ],
+    "status": []
 }

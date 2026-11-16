@@ -2,6 +2,21 @@
 
 ## Version 1.0
 
+### Build 14 (16.11.2026)
+
+#### Neu
+- Batteriegeräte (z. B. Shelly H&T): Spalte „Wach-Signal“ in „Geräte verwalten“. Wird die gewählte Variable aktualisiert (z. B. die Temperatur aus dem Shelly-Modul), fragt das Modul sofort nur dieses Gerät ab.
+- Updates für schlafende Batteriegeräte werden vorgemerkt und starten beim nächsten Aufwachen von selbst.
+
+#### Geändert
+- Batteriegeräte werden nur noch kurz nach dem im Gerät gemerkten Update gefragt (statt der langen Abfrage beim Hersteller) – so reicht die kurze Wachzeit.
+- Ein schlafendes Batteriegerät mit bekanntem Update wird gelb mit „Schläft – Update auf … verfügbar“ gezeigt und zählt bei „Updates verfügbar“ mit.
+- Nach einem Update wartet das Modul bei Batteriegeräten bis zu 24 Stunden auf die Bestätigung beim Aufwachen.
+- `SFW_GetDevices` liefert zusätzlich `battery` und `pending`.
+
+#### Behoben
+- Batteriegerät, das nach der ersten Antwort sofort wieder einschlief, wurde rot als „Nicht erreichbar“ gezeigt.
+
 ### Build 13 (16.11.2026)
 
 #### Behoben

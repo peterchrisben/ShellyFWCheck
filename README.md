@@ -4,7 +4,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 13)
+Aktuelle Version: 1.0 (Build 14)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -30,7 +30,11 @@ Solange kein Gerät eingetragen ist, zeigt Symcon „Instanz ist inaktiv“ – 
 
 **Shellys in einem anderen Netz** (Gäste-, IoT-Netz, Gartenhaus): Die normale Suche findet nur Geräte im Netz von Symcon. Unter „Geräte verwalten“ lassen sich bei „Weitere Netze durchsuchen“ zusätzliche Adressbereiche eintragen, z. B. Von `192.168.20.1`, Bis `192.168.20.254`. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht; auch die Kurzform `192.168.20.0/24` geht. Höchstens 1024 Adressen je Zeile. Symcon muss das andere Netz erreichen können. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.
 
-**Batteriegeräte:** Haken „Batterie“ in der Geräteliste setzen. Das Gerät wird dann als „Schläft“ gezeigt statt als Fehler und zählt nicht bei „Nicht erreichbar“ mit.
+**Batteriegeräte** (z. B. Shelly H&T): Haken „Batterie“ in der Geräteliste setzen. Das Gerät wird dann als „Schläft“ gezeigt statt als Fehler und zählt nicht bei „Nicht erreichbar“ mit. Ist es wach, fragt das Modul nur kurz nach dem Update, das sich das Gerät selbst gemerkt hat (erneuert es alle 24 Stunden) – die normale Abfrage beim Hersteller dauert länger, als ein Batteriegerät wach bleibt.
+
+**Wach-Signal:** Damit das Modul den richtigen Moment erwischt, in der Spalte „Wach-Signal“ eine Variable auswählen, die beim Aufwachen des Geräts neu geschrieben wird – z. B. die Temperatur aus dem Shelly-Modul (MQTT). Wird sie aktualisiert, fragt das Modul sofort nur dieses Gerät ab.
+
+**Update für ein schlafendes Gerät:** Haken setzen und „Ausgewählte aktualisieren“ (oder „Alle Updates starten“). Das Update wird **vorgemerkt** und startet beim nächsten Aufwachen von selbst; bestätigt wird es beim Aufwachen danach. Ohne Wach-Signal klappt das nur, wenn das Gerät zufällig bei einer Prüfung wach ist. Wer den Haken „Batterie“ wieder herausnimmt, verwirft die Vormerkung.
 
 Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zeile den Haken **Eigenes PW** setzen und das Passwort dort eintragen. Der Benutzername ist bei Shelly immer „admin“.
 
@@ -59,7 +63,7 @@ Umstellen: Haken bei den Geräten setzen und in der Zeile „Auto-Update im Ger�
 
 **Bedienung aus der Visualisierung:** Mit dem Haken „Bedienung aus der Visualisierung freigeben“ unter „Updates“ legt das Modul die Variable „Befehl“ an (Jetzt prüfen / Alle Updates starten). Ohne Freigabe gibt es die Variable nicht. Achtung: „Alle Updates starten“ läuft aus der Visualisierung ohne Rückfrage.
 
-Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot) · Schläft (Batteriegeräte, ohne Farbe).
+Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft oder vorgemerkt (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot) · Schläft (Batteriegeräte, ohne Farbe).
 
 ## Variablen
 
