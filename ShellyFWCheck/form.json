@@ -158,6 +158,27 @@
       ]
     },
     {
+      "type": "RowLayout",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "Auto-Update im Gerät für die Ausgewählten:"
+        },
+        {
+          "type": "Button",
+          "caption": "Aus",
+          "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'off');",
+          "confirm": "Automatisches Firmware-Update in den ausgewählten Geräten ausschalten? Vorhandene Update-Zeitpläne in diesen Geräten werden entfernt."
+        },
+        {
+          "type": "Button",
+          "caption": "Stable (täglich 0 Uhr)",
+          "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'stable');",
+          "confirm": "Automatisches Firmware-Update (stabile Version) in den ausgewählten Geräten einschalten? Die Geräte prüfen dann täglich um 0 Uhr selbst und starten bei einem Update neu."
+        }
+      ]
+    },
+    {
       "type": "Label",
       "name": "Result",
       "caption": ""
@@ -229,7 +250,7 @@
     },
     {
       "type": "Label",
-      "caption": "Haken in der Spalte „Auswahl“ lassen sich nur bei Geräten mit verfügbarem Update setzen. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts."
+      "caption": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts."
     }
   ],
   "status": []

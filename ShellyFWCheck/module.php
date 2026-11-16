@@ -349,7 +349,7 @@ class ShellyFWCheck extends IPSModule
         if (count($queue) === 0) {
             $this->ShowResult($only === null
                 ? 'Kein Gerät mit verfügbarem Update – ggf. erst „Jetzt prüfen“.'
-                : 'Für die Auswahl ist kein Update verfügbar (oder es läuft schon).');
+                : 'Für die ausgewählten Geräte ist kein Update verfügbar (oder es läuft schon).');
             return 0;
         }
         $count = count($queue);
@@ -439,7 +439,7 @@ class ShellyFWCheck extends IPSModule
                 'installed' => $e['ver'],
                 'available' => $e['avail'],
                 'updating'  => $e['upd_start'] > 0,
-                'autoUpdate' => $e['auto'] === '' ? 'unknown' : ($e['auto'] === 'off' || !$e['auto_on'] ? 'off' : $e['auto']),
+                'autoUpdate' => $e['auto'] === '' ? 'unknown' : $e['auto'],
                 'autoUpdateSchedule' => $e['auto_spec'],
                 'status'    => $this->StateText($e)
             ];
@@ -452,31 +452,159 @@ class ShellyFWCheck extends IPSModule
     /** Aus der Antwort von Schedule.List: gibt es einen Zeitplan, der Shelly.Update aufruft? */
     private function ReadAutoUpdate(array $res): array
     {
+        // Die Weboberfläche lässt beim Umschalten abgeschaltete Einträge liegen (an Plug M #2: 6 abgeschaltete + 1 eingeschalteter).
+        // Maßgeblich ist deshalb der EINGESCHALTETE Eintrag, nicht der erste.
         if (!$res['ok'] || !is_array($res['result'])) {
-            return ['auto' => '', 'auto_on' => false, 'auto_spec' => '', 'auto_id' => -1];
+            return ['auto' => '', 'auto_spec' => '', 'auto_jobs' => []];
         }
+        $ids = [];
+        $active = '';
+        $spec = '';
         foreach ((array) ($res['result']['jobs'] ?? []) as $job) {
-            foreach ((array) ($job['calls'] ?? []) as $call) {
-                if (strtolower((string) ($call['method'] ?? '')) === 'shelly.update') {
-                    $stage = strtolower((string) ($call['params']['stage'] ?? 'stable'));
-                    return ['auto' => $stage === 'beta' ? 'beta' : 'stable', 'auto_on' => (bool) ($job['enable'] ?? true),
-                        'auto_spec' => (string) ($job['timespec'] ?? ''), 'auto_id' => (int) ($job['id'] ?? -1)];
+            $calls = (array) ($job['calls'] ?? []);
+            if (count($calls) !== 1 || strtolower((string) ($calls[0]['method'] ?? '')) !== 'shelly.update') {
+                continue;   // fremder Zeitplan (z. B. Schaltzeiten) – nie anfassen
+            }
+            $ids[] = (int) ($job['id'] ?? -1);
+            if (!empty($job['enable'])) {
+                $stage = strtolower((string) ($calls[0]['params']['stage'] ?? 'stable')) === 'beta' ? 'beta' : 'stable';
+                if ($active === '' || $stage === 'beta') {
+                    $active = $stage;
+                    $spec = (string) ($job['timespec'] ?? '');
                 }
             }
         }
-        return ['auto' => 'off', 'auto_on' => false, 'auto_spec' => '', 'auto_id' => -1];
+        return ['auto' => $active !== '' ? $active : 'off', 'auto_spec' => $spec, 'auto_jobs' => $ids];
     }
 
     private function AutoText(array $e): string
     {
-        switch ($e['auto']) {
-            case 'off':
-                return 'Aus';
-            case 'stable':
-            case 'beta':
-                return ($e['auto'] === 'beta' ? 'Beta' : 'Stable') . ($e['auto_on'] ? '' : ' (pausiert)');
+        $labels = ['off' => 'Aus', 'stable' => 'Stable', 'beta' => 'Beta'];
+        return $labels[$e['auto']] ?? '';
+    }
+
+    /**
+     * Automatisches Firmware-Update in den Geräten umstellen.
+     * Hosts = JSON-Liste der IP-Adressen, Mode = 'off', 'stable' oder 'beta'. Rückgabe: Anzahl umgestellter Geräte.
+     */
+    public function SetAutoUpdate(string $Hosts, string $Mode): int
+    {
+        $Mode = strtolower($Mode);
+        $list = json_decode($Hosts, true);
+        if (!in_array($Mode, ['off', 'stable', 'beta'], true)) {
+            $this->ShowResult('Auto-Update: unbekannte Einstellung „' . $Mode . '“.');
+            return 0;
         }
-        return '';
+        if (!is_array($list) || count($list) === 0) {
+            $this->ShowResult('Nichts ausgewählt – in der Übersicht in der Spalte „Auswahl“ Haken setzen.');
+            return 0;
+        }
+        $key = 'ShellyFWCheck' . $this->InstanceID . '_Check';
+        if (!IPS_SemaphoreEnter($key, 60000)) {
+            $this->ShowResult('Gerade läuft eine Abfrage – bitte gleich noch einmal versuchen.');
+            return 0;
+        }
+        try {
+            $this->ShowResult('Auto-Update wird umgestellt …');
+            $only = array_map([$this, 'HostKey'], array_map('strval', $list));
+            $state = $this->ReadState();
+            $base = [];
+            foreach ($this->ActiveRows() as $row) {
+                $k = $this->HostKey($row['Host']);
+                if (in_array($k, $only, true) && isset($state[$k]) && $state[$k]['gen'] >= 2) {
+                    $base[$k] = ['host' => $row['Host'], 'timeout' => 15, 'password' => $this->PasswordFor($row), 'auth' => $state[$k]['auth']];
+                }
+            }
+            if (count($base) === 0) {
+                $this->ShowResult('Keines der ausgewählten Geräte ist bekannt – ggf. erst „Jetzt prüfen“.');
+                return 0;
+            }
+            $failed = [];
+            // 1. aktuellen Stand frisch lesen
+            $todo = [];
+            foreach ($this->RpcBatch($this->AutoCalls($base, 'Schedule.List', [])) as $k => $res) {
+                if (!$res['ok']) {
+                    $failed[$k] = $this->ErrorText($res);
+                    continue;
+                }
+                $todo[$k] = $this->ReadAutoUpdate($res)['auto_jobs'];
+            }
+            // 2. alle bisherigen Update-Zeitpläne entfernen (auch abgeschaltete Reste) – je Gerät einer pro Runde
+            while (true) {
+                $calls = [];
+                foreach ($todo as $k => $ids) {
+                    if (count($ids) > 0 && !isset($failed[$k])) {
+                        $calls[$k] = $base[$k] + ['method' => 'Schedule.Delete', 'params' => ['id' => array_shift($todo[$k])]];
+                    }
+                }
+                if (count($calls) === 0) {
+                    break;
+                }
+                foreach ($this->RpcBatch($calls) as $k => $res) {
+                    if (!$res['ok']) {
+                        $failed[$k] = $this->ErrorText($res);
+                    }
+                }
+            }
+            // 3. neuen Zeitplan anlegen – gleicher Aufbau wie von der Weboberfläche (täglich 0 Uhr)
+            if ($Mode !== 'off') {
+                $job = ['enable' => true, 'timespec' => '0 0 0 * * 0,1,2,3,4,5,6',
+                    'calls' => [['method' => 'Shelly.Update', 'params' => ['stage' => $Mode], 'origin' => 'shelly_service']]];
+                $retry = [];
+                foreach ($this->RpcBatch($this->AutoCalls(array_diff_key(array_intersect_key($base, $todo), $failed), 'Schedule.Create', $job)) as $k => $res) {
+                    if (!$res['ok']) {
+                        $retry[$k] = $base[$k];
+                    }
+                }
+                // Ersatz für Geräte, die das Feld „origin“ nicht annehmen
+                unset($job['calls'][0]['origin']);
+                foreach ($this->RpcBatch($this->AutoCalls($retry, 'Schedule.Create', $job)) as $k => $res) {
+                    if (!$res['ok']) {
+                        $failed[$k] = $this->ErrorText($res);
+                    }
+                }
+            }
+            // 4. Ergebnis zurücklesen
+            $done = 0;
+            foreach ($this->RpcBatch($this->AutoCalls($base, 'Schedule.List', [])) as $k => $res) {
+                $state[$k] = array_merge($state[$k], $this->ReadAutoUpdate($res));
+                if (!isset($failed[$k]) && $state[$k]['auto'] === $Mode) {
+                    $done++;
+                    $this->LogMessage($state[$k]['name'] . ': Auto-Update im Gerät auf „' . $this->AutoText($state[$k]) . '“ gestellt', KL_NOTIFY);
+                } elseif (!isset($failed[$k])) {
+                    $failed[$k] = 'Gerät meldet danach „' . $this->AutoText($state[$k]) . '“';
+                }
+            }
+            $this->WriteState($state);
+            $this->SetBuffer('Selected', '[]');
+            $this->PublishValues();
+            $this->RefreshForm();
+            $labels = ['off' => 'Aus', 'stable' => 'Stable', 'beta' => 'Beta'];
+            $text = 'Auto-Update bei ' . $done . ' Gerät(en) auf „' . $labels[$Mode] . '“ gestellt.';
+            foreach ($failed as $k => $why) {
+                $text .= ' Nicht geklappt: ' . ($state[$k]['name'] ?? $k) . ' (' . $why . ').';
+                $this->LogMessage(($state[$k]['name'] ?? $k) . ': Auto-Update nicht umgestellt – ' . $why, KL_WARNING);
+            }
+            $this->ShowResult($text);
+            return $done;
+        } finally {
+            IPS_SemaphoreLeave($key);
+        }
+    }
+
+    private function AutoCalls(array $base, string $method, array $params): array
+    {
+        $calls = [];
+        foreach ($base as $k => $b) {
+            $calls[$k] = $b + ['method' => $method, 'params' => $params];
+        }
+        return $calls;
+    }
+
+    private function ErrorText(array $res): string
+    {
+        $map = ['offline' => 'nicht erreichbar', 'auth_missing' => 'Passwort fehlt', 'auth_wrong' => 'Passwort falsch'];
+        return $map[$res['err']] ?? ($res['msg'] !== '' ? $res['msg'] : 'Fehler');
     }
 
     // ---------------------------------------------------------------- Updates
@@ -850,7 +978,7 @@ class ShellyFWCheck extends IPSModule
     {
         return ['id' => '', 'name' => '', 'model' => '', 'gen' => 0, 'ver' => '', 'avail' => '', 'auth' => false,
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
-            'auto' => '', 'auto_on' => false, 'auto_spec' => '', 'auto_id' => -1,
+            'auto' => '', 'auto_spec' => '', 'auto_jobs' => [],
             'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0];
     }
 
@@ -954,10 +1082,10 @@ class ShellyFWCheck extends IPSModule
             }
             $k = $this->HostKey($row['Host']);
             $e = $state[$k] ?? $this->EmptyEntry();
-            $can = $this->CanUpdate($e);
+            $can = $e['online'] && $e['err'] === '' && $e['gen'] >= 2;
             $list[] = [
                 'Select'    => $can && in_array($k, $selected, true),
-                'editable'  => $can,   // Haken nur dort, wo ein Update verfügbar ist
+                'editable'  => $can,   // Haken nur bei erreichbaren Geräten
                 'Name'      => $e['name'],
                 'Host'      => $row['Host'],
                 'Model'     => $e['model'],

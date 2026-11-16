@@ -2,6 +2,17 @@
 
 ## Version 1.0
 
+### Build 8 (16.11.2026)
+
+#### Neu
+- Auto-Update im Gerät umstellen: Haken setzen, dann „Aus“ oder „Stable (täglich 0 Uhr)“. Bisherige Update-Zeitpläne des Geräts werden dabei entfernt, andere Zeitpläne bleiben unberührt. Für Skripte: `SFW_SetAutoUpdate($id, $Hosts, $Mode)`.
+
+#### Geändert
+- Haken in der Spalte „Auswahl“ lassen sich jetzt bei allen erreichbaren Geräten setzen (für das Auto-Update); „Ausgewählte aktualisieren“ startet weiterhin nur Geräte mit verfügbarem Update.
+
+#### Behoben
+- Spalte „Auto-Update“ zeigte „Beta (pausiert)“, obwohl im Gerät ein eingeschalteter Beta-Zeitplan lag: In manchen Geräten liegen abgeschaltete alte Einträge, ausgewertet wurde der erste statt des eingeschalteten.
+
 ### Build 7 (16.11.2026)
 
 #### Neu
