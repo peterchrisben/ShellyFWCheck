@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 13 (16.11.2026)
+
+#### Behoben
+- Haken „Bedienung aus der Visualisierung freigeben“: „Änderungen übernehmen“ brach mit „Der Eintrag im Parameter OPTIONS enthält unbekannte Unterparameter“ ab, die Variable „Befehl“ wurde nicht angelegt. Die Auswahl-Optionen enthalten jetzt nur noch die Angaben, die Symcon für eine Aufzählung kennt. (Gemeldet im Forum, danke!)
+
 ### Build 12 (16.11.2026)
 
 #### Neu

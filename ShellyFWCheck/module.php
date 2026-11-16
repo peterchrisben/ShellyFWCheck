@@ -58,8 +58,8 @@ class ShellyFWCheck extends IPSModule
         $this->MaintainVariable('Table', $this->Translate('Übersicht'), VARIABLETYPE_STRING, '~HTMLBox', 60, $this->ReadPropertyBoolean('ShowTable'));
 
         // Bedienung aus der Visualisierung – nur mit ausdrücklicher Freigabe im Formular
-        $option = static fn (int $value, string $caption): array => ['Value' => $value, 'Caption' => $caption, 'IconActive' => false, 'IconValue' => '',
-            'Color' => -1, 'ColorActive' => false, 'ColorValue' => -1, 'ContentColorActive' => false, 'ContentColorValue' => -1];
+        // Aufzählung kennt je Option nur Value, Caption, IconActive, IconValue, Color – weitere Schlüssel lösen beim Übernehmen eine Warnung aus
+        $option = static fn (int $value, string $caption): array => ['Value' => $value, 'Caption' => $caption, 'IconActive' => false, 'IconValue' => '', 'Color' => -1];
         $commands = $this->ReadPropertyBoolean('VisuCommands');
         $this->MaintainVariable('Command', $this->Translate('Befehl'), VARIABLETYPE_INTEGER, [
             'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION,

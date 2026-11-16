@@ -26,3 +26,4 @@
 | Befehl aus der Visu | Freigabe setzen, Variable „Befehl“ in der Kachel-Visu: wird sie als Auswahl gezeigt, löst sie aus? Auch in der App ansehen | Build 11 | offen |
 | Nach Build 12 alles wie vorher | Formular öffnen, „Jetzt prüfen“: Texte unverändert deutsch, Status-Spalte und Update-Verlauf stimmen (auch alte Einträge) | Build 12 | offen |
 | Englisch | nur wer mag: Symcon-Konsole auf Englisch stellen – Formular und Meldungen englisch? | Build 12 | offen |
+| Befehl aus der Visu (Build 13) | Haken „Bedienung aus der Visualisierung freigeben“ setzen, übernehmen: keine Fehlermeldung, Variable „Befehl“ da, in Kachel-Visu und App auswählbar | Build 13 | offen |
