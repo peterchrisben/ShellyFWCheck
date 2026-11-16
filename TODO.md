@@ -17,4 +17,6 @@
 | Meldung bei „Jetzt prüfen“ | Erscheint „Abfrage läuft …“ sofort und danach „Abfrage fertig: …“? | Build 5 | ok (16.11., Meldung erscheint während der Abfrage) |
 | Update in mehreren Schritten | Gerät mit Zwischenschritt (wie S2PMG3 2.1.1 → 2.2.0): stößt das Modul nach ca. 1–2 Minuten selbst „Schritt 2“ an? | Build 6, beim nächsten solchen Update | offen (von Hand bestätigt 16.11.: zweiter Anstoß bringt 2.2.0 in 2 Minuten) |
 | Spalte „Auto-Update“ | zeigt den Stand der Geräte | Build 7 | ok (16.11.); Plug M #2 muss mit Build 8 „Beta“ zeigen |
-| Auto-Update umstellen | Plug M #2 anhaken → „Aus“: Zeile zeigt „Aus“, Weboberfläche zeigt „Disable auto update“. Ein Gerät → „Stable“: Weboberfläche zeigt „Enable update to stable version“ | Build 8 | offen |
+| Auto-Update umstellen | Aus / Stable an Plug M #2, Kontrolle in der Weboberfläche | Build 8 | ok (16.11., Weboberfläche zeigt die Einstellung) |
+| Push-Nachricht | Kachel-Visualisierung wählen, übernehmen, „Test-Nachricht senden“ – kommt sie auf dem Handy an? | Build 9 | offen |
+| Folge-Updates | Gerät mit Zwischenversion: läuft es nach dem ersten Update von selbst weiter („Folge-Update“ im Status)? | Build 9, beim nächsten solchen Update | offen |

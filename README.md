@@ -2,7 +2,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 8)
+Aktuelle Version: 1.0 (Build 9)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -39,6 +39,10 @@ Ein Klick auf die **IP-Adresse** in der Übersicht öffnet die Weboberfläche de
 Die Spalte **Auto-Update** zeigt, ob im Gerät selbst das automatische Update eingeschaltet ist (Aus / Stable / Beta). Das ist ein Zeitplan im Gerät; ist er an, aktualisiert sich das Gerät von selbst, unabhängig von diesem Modul.
 
 Umstellen: Haken bei den Geräten setzen und in der Zeile „Auto-Update im Gerät für die Ausgewählten“ **Aus** oder **Stable (täglich 0 Uhr)** drücken. Das Modul entfernt dabei alle bisherigen Update-Zeitpläne des Geräts (auch abgeschaltete Reste) und legt bei „Stable“ genau einen neuen an, im selben Aufbau wie die Shelly-Weboberfläche. Andere Zeitpläne (z. B. Schaltzeiten) bleiben unberührt. Beta lässt sich nur per Skript einschalten.
+
+**Folge-Updates:** Bietet ein Gerät direkt nach einem Update schon das nächste an (z. B. 2.0.0 → 2.0.3 → 2.2.0), macht das Modul von selbst weiter, bis die neueste Version installiert ist (höchstens fünf Folge-Updates). Abschaltbar unter „Abfrage und Anzeige“.
+
+**Push-Nachricht:** Unter „Abfrage und Anzeige“ lässt sich eine Kachel-Visualisierung auswählen. Findet eine Prüfung ein neues Update, bekommt sie eine Nachricht („Update verfügbar: Name (Version)“), je Update nur einmal. Ohne Auswahl gibt es keine Nachricht. Mit „Test-Nachricht senden“ lässt sich das ausprobieren.
 
 Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot).
 

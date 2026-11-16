@@ -123,8 +123,19 @@
           "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen"
         },
         {
+          "type": "CheckBox",
+          "name": "ContinueUpdates",
+          "caption": "Nach einem Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
+        },
+        {
+          "type": "SelectInstance",
+          "name": "NotifyVisu",
+          "caption": "Push-Nachricht bei neuem Update an diese Kachel-Visualisierung (leer = keine Nachricht)",
+          "width": "700px"
+        },
+        {
           "type": "Label",
-          "caption": "Updates werden nie automatisch gestartet – nur über die Knöpfe unten oder per Skript."
+          "caption": "Updates werden nie von selbst begonnen – nur über die Knöpfe unten oder per Skript. Ein begonnenes Update führt das Modul zu Ende."
         }
       ]
     }
@@ -175,6 +186,11 @@
           "caption": "Stable (täglich 0 Uhr)",
           "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'stable');",
           "confirm": "Automatisches Firmware-Update (stabile Version) in den ausgewählten Geräten einschalten? Die Geräte prüfen dann täglich um 0 Uhr selbst und starten bei einem Update neu."
+        },
+        {
+          "type": "Button",
+          "caption": "Test-Nachricht senden",
+          "onClick": "IPS_RequestAction($id, 'TestNotify', '');"
         }
       ]
     },

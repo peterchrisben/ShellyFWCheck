@@ -2,6 +2,12 @@
 
 ## Version 1.0
 
+### Build 9 (16.11.2026)
+
+#### Neu
+- Folge-Updates: Bietet ein Gerät direkt nach einem Update das nächste an, macht das Modul von selbst weiter bis zur neuesten Version (höchstens fünf hintereinander). Einstellung „Nach einem Update gleich weiter …“ unter „Abfrage und Anzeige“, Standard an.
+- Push-Nachricht bei neu gefundenem Update an eine wählbare Kachel-Visualisierung; ohne Auswahl keine Nachricht. Knopf „Test-Nachricht senden“.
+
 ### Build 8 (16.11.2026)
 
 #### Neu

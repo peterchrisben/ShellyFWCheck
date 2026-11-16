@@ -15,6 +15,7 @@ class ShellyFWCheck extends IPSModule
     private const VERIFY_SECONDS = 60;      // Abstand der Kontrollabfragen nach einem Update
     private const VERIFY_MAX = 900;         // so lange (Sekunden) wird auf die neue Version gewartet
     private const MAX_STEPS = 4;            // höchstens so viele Anstöße je Update (mehrstufige Updates)
+    private const MAX_CHAIN = 5;            // höchstens so viele Folge-Updates hintereinander
 
     public function Create()
     {
@@ -24,6 +25,8 @@ class ShellyFWCheck extends IPSModule
         $this->RegisterPropertyInteger('CheckInterval', 24);
         $this->RegisterPropertyInteger('UpdateGap', 20);
         $this->RegisterPropertyBoolean('ShowTable', true);
+        $this->RegisterPropertyBoolean('ContinueUpdates', true);
+        $this->RegisterPropertyInteger('NotifyVisu', 0);
 
         $this->RegisterAttributeString('State', '{}');
         $this->RegisterAttributeInteger('LastCheck', 0);
@@ -48,6 +51,17 @@ class ShellyFWCheck extends IPSModule
         $this->RegisterVariableString('UpdateNames', 'Geräte mit Update', $plain, 40);
         $this->RegisterVariableString('LastCheck', 'Letzte Prüfung', $plain, 50);
         $this->MaintainVariable('Table', 'Übersicht', VARIABLETYPE_STRING, '~HTMLBox', 60, $this->ReadPropertyBoolean('ShowTable'));
+
+        // Gewählte Visualisierung als Referenz anmelden (Symcon warnt dann, bevor sie gelöscht wird)
+        $visu = $this->ReadPropertyInteger('NotifyVisu');
+        foreach ($this->GetReferenceList() as $ref) {
+            if ($ref !== $visu) {
+                $this->UnregisterReference($ref);
+            }
+        }
+        if ($visu >= 10000) {
+            $this->RegisterReference($visu);
+        }
 
         // Merker von Geräten entfernen, die nicht mehr in der Liste stehen
         $state = $this->ReadState();
@@ -110,6 +124,12 @@ class ShellyFWCheck extends IPSModule
             case 'UpdateDevice':
                 $this->UpdateDevice((string) $Value);
                 break;
+            case 'TestNotify':
+                $ok = $this->Notify('Shelly-Firmware', 'Test: So sieht die Meldung bei einem neuen Update aus.');
+                $this->ShowResult($ok ? 'Test-Nachricht gesendet.' : ($this->ReadPropertyInteger('NotifyVisu') < 10000
+                    ? 'Keine Visualisierung ausgewählt (unter „Abfrage und Anzeige“) – erst auswählen und übernehmen.'
+                    : 'Test-Nachricht konnte nicht gesendet werden – ist eine Kachel-Visualisierung ausgewählt? Details im Meldungsfenster.'));
+                break;
             case 'Discover':
                 $this->Discover();
                 break;
@@ -161,6 +181,8 @@ class ShellyFWCheck extends IPSModule
 
             $calls = [];
             $again = [];
+            $justDone = [];   // Geräte, die in dieser Runde ein Update abgeschlossen haben
+            $found = [];      // neu gefundene Updates (für die Benachrichtigung)
             foreach ($rows as $row) {
                 $k = $this->HostKey($row['Host']);
                 $e = $state[$k] ?? $this->EmptyEntry();
@@ -201,6 +223,7 @@ class ShellyFWCheck extends IPSModule
                         $e['upd_start'] = 0;
                         $e['avail'] = '';
                         $e['note'] = 'Aktualisiert (vorher ' . $e['upd_from'] . ')';
+                        $justDone[$k] = $row;
                     } elseif ($e['slot'] >= 0 && $e['upd_slot'] >= 0 && $e['slot'] !== $e['upd_slot'] && $e['upd_tries'] < self::MAX_STEPS) {
                         // Gerät hat neu gestartet (anderer Speicherplatz), meldet aber die alte Version:
                         // Zwischenschritt eines mehrstufigen Updates. Eine Runde abwarten, dann erneut anstoßen.
@@ -280,16 +303,54 @@ class ShellyFWCheck extends IPSModule
                         if (strpos($e['note'], 'Aktualisiert') !== 0) {
                             $e['note'] = '';
                         }
+                        $found[$k] = $e['name'] . ' (' . $avail . ')';
                     }
                     $e['avail'] = $avail;
                 }
                 $state[$k] = $e;
             }
 
+            // Folge-Updates: Gerät hat gerade ein Update abgeschlossen und bietet schon das nächste an
+            // (z. B. 2.0.0 → 2.0.3 → 2.2.0). Auf Wunsch gleich weiter bis zur neuesten Version.
+            if ($this->ReadPropertyBoolean('ContinueUpdates')) {
+                $next = [];
+                foreach ($justDone as $k => $row) {
+                    $e = $state[$k];
+                    if ($e['err'] === '' && $e['avail'] !== '' && $e['upd_chain'] < self::MAX_CHAIN) {
+                        $next[$k] = ['host' => $row['Host'], 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
+                            'timeout' => 20, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
+                    }
+                }
+                foreach ($this->RpcBatch($next) as $k => $res) {
+                    $e = $state[$k];
+                    if ($res['ok']) {
+                        $e['upd_chain']++;
+                        $e['upd_start'] = $now;
+                        $e['upd_from'] = $e['ver'];
+                        $e['upd_target'] = $e['avail'];
+                        $e['upd_slot'] = $e['slot'];
+                        $e['upd_tries'] = 1;
+                        $e['upd_step'] = 0;
+                        $e['note'] = '';
+                        unset($found[$k]);   // läuft von selbst weiter – keine Benachrichtigung nötig
+                        $this->LogMessage($e['name'] . ': Folge-Update von ' . $e['ver'] . ' auf ' . $e['avail'] . ' gestartet', KL_NOTIFY);
+                    } else {
+                        $this->LogMessage($e['name'] . ': Folge-Update auf ' . $e['avail'] . ' nicht gestartet – ' . $this->ErrorText($res), KL_WARNING);
+                    }
+                    $state[$k] = $e;
+                }
+                if (count($next) > 0) {
+                    $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
+                }
+            }
+
             $this->WriteState($state);
             $this->WriteAttributeInteger('LastCheck', $now);
             $this->PublishValues();
             $this->RefreshForm();
+            if (count($found) > 0) {
+                $this->Notify('Shelly-Firmware', (count($found) === 1 ? 'Update verfügbar: ' : count($found) . ' Updates verfügbar: ') . implode(', ', $found));
+            }
             $c = $this->Counts();
             $this->ShowResult('Abfrage fertig: ' . $c['total'] . ' Geräte geprüft, '
                 . ($c['updates'] > 0 ? $c['updates'] . ' mit Update' : 'kein Update verfügbar')
@@ -650,6 +711,7 @@ class ShellyFWCheck extends IPSModule
         $e['upd_slot'] = $e['slot'];
         $e['upd_tries'] = 1;
         $e['upd_step'] = 0;
+        $e['upd_chain'] = 0;
         $e['note'] = '';
         $state[$k] = $e;
         $this->WriteState($state);
@@ -672,6 +734,34 @@ class ShellyFWCheck extends IPSModule
         $this->StartUpdate($host, $message);
         $this->SendDebug('Update', (string) $message, 0);
         $this->RefreshForm();
+    }
+
+    /**
+     * Push-Nachricht an die im Formular gewählte Kachel-Visualisierung (0 = abgeschaltet).
+     * Titel höchstens 32, Text höchstens 256 Zeichen (Vorgabe von VISU_PostNotification).
+     */
+    protected function Notify(string $title, string $text): bool
+    {
+        $visu = $this->ReadPropertyInteger('NotifyVisu');
+        if ($visu < 10000) {
+            return false;
+        }
+        if (mb_strlen($text) > 256) {
+            $text = mb_substr($text, 0, 253) . ' …';
+        }
+        try {
+            if (!IPS_InstanceExists($visu) || !function_exists('VISU_PostNotification')) {
+                throw new Exception('gewählte Visualisierung nicht gefunden');
+            }
+            $result = @VISU_PostNotification($visu, mb_substr($title, 0, 32), $text, 'Info', 0);
+            if ($result === false) {
+                throw new Exception('Visualisierung hat die Nachricht abgelehnt');
+            }
+            return true;
+        } catch (Throwable $t) {
+            $this->LogMessage('Benachrichtigung nicht gesendet: ' . $t->getMessage(), KL_WARNING);
+            return false;
+        }
     }
 
     /** Wartezeit (Sekunden) zwischen erkanntem Zwischenschritt und erneutem Anstoß. */
@@ -979,7 +1069,8 @@ class ShellyFWCheck extends IPSModule
         return ['id' => '', 'name' => '', 'model' => '', 'gen' => 0, 'ver' => '', 'avail' => '', 'auth' => false,
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
             'auto' => '', 'auto_spec' => '', 'auto_jobs' => [],
-            'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0];
+            'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0,
+            'upd_chain' => 0];
     }
 
     private function ReadState(): array
@@ -1003,7 +1094,7 @@ class ShellyFWCheck extends IPSModule
     {
         if ($e['upd_start'] > 0) {
             $minutes = (int) floor((time() - $e['upd_start']) / 60);
-            return 'Update auf ' . $e['upd_target'] . ' läuft … (' . ($e['upd_tries'] > 1 ? 'Schritt ' . $e['upd_tries'] . ', ' : '')
+            return 'Update auf ' . $e['upd_target'] . ' läuft … (' . ($e['upd_chain'] > 0 ? 'Folge-Update, ' : '') . ($e['upd_tries'] > 1 ? 'Schritt ' . $e['upd_tries'] . ', ' : '')
                 . 'gestartet ' . date('H:i', $e['upd_start'])
                 . ($minutes >= 3 && $e['online'] ? ', Gerät meldet noch ' . $e['ver'] . ' – Updates in mehreren Schritten dauern länger' : '') . ')';
         }
