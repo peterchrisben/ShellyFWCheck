@@ -2,6 +2,14 @@
 
 ## Version 1.0
 
+### Build 12 (16.11.2026)
+
+#### Neu
+- Englische Übersetzung: Formular, Meldungen, Status-Texte, Tabelle, Push-Nachricht und Variablennamen erscheinen auf Englisch, wenn Symcon auf Englisch läuft. Auf Deutsch ändert sich nichts.
+
+#### Geändert
+- `SFW_GetHistory` liefert den Auslöser (`by`) jetzt als festes Kürzel: `module`, `chain` (Folge-Update) oder `external` (Gerät selbst / von außen). Im Formular steht weiterhin der Text. Ältere Einträge behalten ihren Text.
+
 ### Build 11 (16.11.2026)
 
 #### Neu

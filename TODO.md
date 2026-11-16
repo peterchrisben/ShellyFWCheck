@@ -24,3 +24,5 @@
 | Batteriegerät | Haken „Batterie“ setzen – Status „Schläft“, nicht rot | Build 11 | offen |
 | Update-Verlauf | nach dem nächsten Update: Eintrag im Abschnitt „Update-Verlauf“ | Build 11 | offen |
 | Befehl aus der Visu | Freigabe setzen, Variable „Befehl“ in der Kachel-Visu: wird sie als Auswahl gezeigt, löst sie aus? Auch in der App ansehen | Build 11 | offen |
+| Nach Build 12 alles wie vorher | Formular öffnen, „Jetzt prüfen“: Texte unverändert deutsch, Status-Spalte und Update-Verlauf stimmen (auch alte Einträge) | Build 12 | offen |
+| Englisch | nur wer mag: Symcon-Konsole auf Englisch stellen – Formular und Meldungen englisch? | Build 12 | offen |

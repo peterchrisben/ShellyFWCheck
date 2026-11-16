@@ -2,7 +2,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 11)
+Aktuelle Version: 1.0 (Build 12)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -78,7 +78,7 @@ SFW_UpdateAll($id);                     // alle verfügbaren Updates nacheinande
 SFW_Discover($id);                      // Gerätesuche (trägt nur ins offene Formular ein)
 SFW_SetAutoUpdate($id, '["192.168.1.50"]', 'stable'); // Auto-Update im Gerät: 'off', 'stable' oder 'beta'
 SFW_GetDevices($id);                    // Stand aller Geräte als JSON
-SFW_GetHistory($id);                    // Update-Verlauf als JSON (neueste zuerst)
+SFW_GetHistory($id);                    // Update-Verlauf als JSON (neueste zuerst); by: module, chain (Folge-Update), external (Gerät selbst / von außen)
 ```
 
 ## Hinweise
@@ -92,3 +92,9 @@ SFW_GetHistory($id);                    // Update-Verlauf als JSON (neueste zuer
 CC BY-NC-SA 4.0 – Peter Chrisben
 
 Shelly ist eine Marke ihres jeweiligen Inhabers. ShellyFWCheck ist ein privates Projekt und steht in keiner Verbindung zum Hersteller.
+
+## Sprache / Language
+
+Das Modul gibt es auf Deutsch und Englisch – Symcon wählt die Sprache von selbst. Variablen behalten den Namen aus der Sprache, in der die Instanz angelegt wurde.
+
+**English:** Shelly Firmware-Check shows the installed and the available firmware of all Shelly devices (Gen2 and newer) in one list and starts updates from Symcon – locally, without cloud or app. Form, messages and variables are available in English; this documentation is German only.
