@@ -93,45 +93,48 @@
     {
       "type": "ExpansionPanel",
       "name": "PanelSettings",
-      "caption": "Abfrage und Anzeige",
+      "caption": "Prüfung, Nachricht und Anzeige",
       "expanded": false,
       "items": [
         {
-          "type": "RowLayout",
-          "items": [
-            {
-              "type": "NumberSpinner",
-              "name": "CheckInterval",
-              "caption": "Automatisch prüfen alle (Stunden, 0 = aus)",
-              "minimum": 0,
-              "maximum": 720,
-              "width": "340px"
-            },
-            {
-              "type": "NumberSpinner",
-              "name": "UpdateGap",
-              "caption": "Pause zwischen zwei Updates (Sekunden)",
-              "minimum": 5,
-              "maximum": 600,
-              "width": "340px"
-            }
-          ]
-        },
-        {
-          "type": "CheckBox",
-          "name": "ShowTable",
-          "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen"
-        },
-        {
-          "type": "CheckBox",
-          "name": "ContinueUpdates",
-          "caption": "Nach einem Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
+          "type": "NumberSpinner",
+          "name": "CheckInterval",
+          "caption": "Automatisch prüfen alle (Stunden, 0 = aus)",
+          "minimum": 0,
+          "maximum": 720,
+          "width": "340px"
         },
         {
           "type": "SelectInstance",
           "name": "NotifyVisu",
           "caption": "Push-Nachricht bei neuem Update an diese Kachel-Visualisierung (leer = keine Nachricht)",
           "width": "700px"
+        },
+        {
+          "type": "CheckBox",
+          "name": "ShowTable",
+          "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen"
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "name": "PanelUpdates",
+      "caption": "Updates",
+      "expanded": false,
+      "items": [
+        {
+          "type": "CheckBox",
+          "name": "ContinueUpdates",
+          "caption": "Nach einem Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "UpdateGap",
+          "caption": "Pause zwischen zwei Geräten bei mehreren Updates (Sekunden)",
+          "minimum": 5,
+          "maximum": 600,
+          "width": "440px"
         },
         {
           "type": "Label",

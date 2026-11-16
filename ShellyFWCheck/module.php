@@ -127,7 +127,7 @@ class ShellyFWCheck extends IPSModule
             case 'TestNotify':
                 $ok = $this->Notify('Shelly-Firmware', 'Test: So sieht die Meldung bei einem neuen Update aus.');
                 $this->ShowResult($ok ? 'Test-Nachricht gesendet.' : ($this->ReadPropertyInteger('NotifyVisu') < 10000
-                    ? 'Keine Visualisierung ausgewählt (unter „Abfrage und Anzeige“) – erst auswählen und übernehmen.'
+                    ? 'Keine Visualisierung ausgewählt (unter „Prüfung, Nachricht und Anzeige“) – erst auswählen und übernehmen.'
                     : 'Test-Nachricht konnte nicht gesendet werden – ist eine Kachel-Visualisierung ausgewählt? Details im Meldungsfenster.'));
                 break;
             case 'Discover':
@@ -148,6 +148,8 @@ class ShellyFWCheck extends IPSModule
             'Devices'       => ['values' => $this->ConfigRows($rows)],
             'Status'        => ['values' => $this->StatusRows($rows)],
             'PanelDevices'  => ['caption' => 'Geräte verwalten (' . count($rows) . ')', 'expanded' => count($rows) === 0],
+            'PanelSettings' => ['caption' => 'Prüfung, Nachricht und Anzeige (' . $this->SettingsSummary() . ')'],
+            'PanelUpdates'  => ['caption' => 'Updates (Folge-Updates ' . ($this->ReadPropertyBoolean('ContinueUpdates') ? 'an' : 'aus') . ')'],
             'PanelPassword' => ['expanded' => $noSetup,
                 'caption' => 'Passwort' . ($this->ReadPropertyString('MasterPassword') !== '' ? ' (Master-Passwort hinterlegt)' : '')]
         ];
@@ -1297,6 +1299,14 @@ class ShellyFWCheck extends IPSModule
     private function ShowResult(string $text): void
     {
         $this->UpdateFormField('Result', 'caption', date('H:i:s') . '  ' . $text);
+    }
+
+    private function SettingsSummary(): string
+    {
+        $hours = max(0, $this->ReadPropertyInteger('CheckInterval'));
+        $parts = [$hours === 0 ? 'keine automatische Prüfung' : ($hours === 24 ? 'täglich' : 'alle ' . $hours . ' Stunden')];
+        $parts[] = $this->ReadPropertyInteger('NotifyVisu') >= 10000 ? 'Push-Nachricht an' : 'Push-Nachricht aus';
+        return implode(', ', $parts);
     }
 
     private function FillForm(array &$items, array $fill): void

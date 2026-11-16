@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 10 (16.11.2026)
+
+#### Geändert
+- Einstellungen im Formular nach Thema getrennt: „Prüfung, Nachricht und Anzeige“ (Abstand der Prüfung, Push-Nachricht, Tabelle) und „Updates“ (Folge-Updates, Pause zwischen den Geräten). Die Titel zeigen den aktuellen Stand.
+
 ### Build 9 (16.11.2026)
 
 #### Neu
