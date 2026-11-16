@@ -2,6 +2,16 @@
 
 ## Version 1.0
 
+### Build 5 (16.11.2026)
+
+#### Neu
+- „Jetzt prüfen“ meldet unter den Knöpfen „Abfrage läuft …“ und danach das Ergebnis (Anzahl Geräte, Updates, nicht erreichbar).
+
+#### Geändert
+- Abfrage schneller: Geräte mit und ohne Passwort werden jetzt in einer gemeinsamen Runde geprüft (vorher nacheinander, an 11 Geräten ca. 23 Sekunden).
+- Nach einem bestätigten Update wird sofort geprüft, ob das Gerät ein weiteres Update anbietet (Shelly aktualisiert teils in Stufen) – Status „Weiteres Update verfügbar“.
+- Wartezeit je Gerät bei der Update-Abfrage von 20 auf 45 Sekunden erhöht (die Geräte fragen selbst beim Hersteller nach und brauchen teils über 15 Sekunden).
+
 ### Build 4 (16.11.2026)
 
 #### Neu

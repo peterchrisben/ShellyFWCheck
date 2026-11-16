@@ -14,3 +14,4 @@
 | Variable „Übersicht“ | Tabelle in der Kachel-Visu und in der App lesbar (hell/dunkel)? | sofort | offen |
 | Batteriegerät | Zeigt „Nicht erreichbar“, stört den Rest nicht | sofort | offen |
 | Link auf die Weboberfläche | Klick auf eine IP-Adresse in der Übersicht – öffnet sich das richtige Gerät (auch bei nicht markierter Zeile)? | Build 4 | offen |
+| Meldung bei „Jetzt prüfen“ | Erscheint „Abfrage läuft …“ sofort und danach „Abfrage fertig: …“? | Build 5 | offen |

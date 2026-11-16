@@ -142,10 +142,12 @@ class ShellyFWCheck extends IPSModule
     {
         $key = 'ShellyFWCheck' . $this->InstanceID . '_Check';
         if (!IPS_SemaphoreEnter($key, 100)) {
-            return false;   // läuft schon
+            $this->ShowResult('Abfrage läuft bereits …');
+            return false;
         }
         try {
             $rows = $this->ActiveRows();
+            $this->ShowResult('Abfrage läuft … (' . count($rows) . ' Geräte, kann bis zu einer halben Minute dauern)');
             $state = $this->ReadState();
             $now = time();
 
@@ -201,12 +203,15 @@ class ShellyFWCheck extends IPSModule
                         $e['upd_start'] = 0;
                         $e['note'] = 'Update nicht bestätigt – Version unverändert';
                     }
-                    $state[$k] = $e;
-                    continue;
+                    if ($e['upd_start'] > 0) {
+                        $state[$k] = $e;
+                        continue;   // läuft noch: Gerät in Ruhe lassen
+                    }
+                    // fertig: gleich nachsehen, ob es ein weiteres Update gibt (Shelly aktualisiert teils in Stufen)
                 }
                 $state[$k] = $e;
                 $calls[$k] = ['host' => $row['Host'], 'method' => 'Shelly.CheckForUpdate', 'params' => [],
-                    'timeout' => 20, 'password' => $this->PasswordFor($row)];
+                    'timeout' => 45, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
             }
 
             // Update läuft und Gerät startet gerade neu → nicht als Fehler zeigen
@@ -230,7 +235,9 @@ class ShellyFWCheck extends IPSModule
                     }
                     if ($avail !== '' && $e['avail'] !== $avail) {
                         $this->LogMessage($e['name'] . ': Firmware ' . $avail . ' verfügbar (installiert ' . $e['ver'] . ')', KL_NOTIFY);
-                        $e['note'] = '';
+                        if (strpos($e['note'], 'Aktualisiert') !== 0) {
+                            $e['note'] = '';
+                        }
                     }
                     $e['avail'] = $avail;
                 }
@@ -241,6 +248,11 @@ class ShellyFWCheck extends IPSModule
             $this->WriteAttributeInteger('LastCheck', $now);
             $this->PublishValues();
             $this->RefreshForm();
+            $c = $this->Counts();
+            $this->ShowResult('Abfrage fertig: ' . $c['total'] . ' Geräte geprüft, '
+                . ($c['updates'] > 0 ? $c['updates'] . ' mit Update' : 'kein Update verfügbar')
+                . ($c['running'] > 0 ? ', ' . $c['running'] . ' Update(s) laufen' : '')
+                . ($c['offline'] > 0 ? ', ' . $c['offline'] . ' nicht erreichbar' : '') . '.');
             return true;
         } finally {
             IPS_SemaphoreLeave($key);
@@ -418,7 +430,7 @@ class ShellyFWCheck extends IPSModule
             return false;
         }
         $res = $this->RpcBatch([$k => ['host' => $row['Host'], 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
-            'timeout' => 15, 'password' => $this->PasswordFor($row)]])[$k];
+            'timeout' => 20, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']]])[$k];
         if (!$res['ok']) {
             $e['err'] = $res['err'];
             $e['msg'] = $res['msg'];
@@ -518,34 +530,72 @@ class ShellyFWCheck extends IPSModule
         if (count($calls) === 0) {
             return $out;
         }
+        $fail = static fn (string $err, string $msg = ''): array => ['ok' => false, 'result' => null, 'err' => $err, 'msg' => $msg];
+
+        // Runde 0: Geräte mit Passwortschutz antworten ohne Anmeldung sofort mit 401 und der Aufgabe (nonce).
+        // So laufen danach alle eigentlichen Abfragen in EINER gemeinsamen Runde statt nacheinander.
+        $headers = [];
+        $probe = [];
+        foreach ($calls as $k => $call) {
+            $headers[$k] = '';
+            if (!empty($call['auth'])) {
+                $probe[$k] = $this->RpcRequest(['timeout' => 5] + $call, '');
+            }
+        }
+        foreach ($this->HttpBatch($probe) as $k => $res) {
+            if ($res['code'] === 401) {
+                $r = $this->AnswerChallenge($res['auth'], (string) $calls[$k]['password']);
+                if ($r['err'] !== '') {
+                    $out[$k] = $fail($r['err'], $r['msg']);
+                } else {
+                    $headers[$k] = $r['header'];
+                }
+            } elseif ($res['code'] === 200) {
+                $out[$k] = $this->RpcResult($res);   // Schutz inzwischen abgeschaltet: Antwort ist schon da
+            }
+            // sonst (Zeitüberschreitung o. Ä.): in Runde 1 normal versuchen
+        }
+
+        // Runde 1: alle Abfragen gleichzeitig
         $requests = [];
         foreach ($calls as $k => $call) {
-            $requests[$k] = $this->RpcRequest($call, '');
+            if (!isset($out[$k])) {
+                $requests[$k] = $this->RpcRequest($call, $headers[$k]);
+            }
         }
         $retry = [];
         foreach ($this->HttpBatch($requests) as $k => $res) {
-            if ($res['code'] === 401) {
-                $password = (string) $calls[$k]['password'];
-                $header = $password !== '' ? $this->DigestHeader($res['auth'], $password) : '';
-                if ($password === '') {
-                    $out[$k] = ['ok' => false, 'result' => null, 'err' => 'auth_missing', 'msg' => ''];
-                } elseif ($header === '') {
-                    $out[$k] = ['ok' => false, 'result' => null, 'err' => 'rpc', 'msg' => 'Anmeldung: unbekanntes Verfahren'];
+            if ($res['code'] !== 401) {
+                $out[$k] = $this->RpcResult($res);
+            } elseif ($headers[$k] !== '') {
+                $out[$k] = $fail('auth_wrong');
+            } else {
+                // Gerät verlangt doch eine Anmeldung (z. B. Schutz neu eingeschaltet)
+                $r = $this->AnswerChallenge($res['auth'], (string) $calls[$k]['password']);
+                if ($r['err'] !== '') {
+                    $out[$k] = $fail($r['err'], $r['msg']);
                 } else {
-                    $retry[$k] = $this->RpcRequest($calls[$k], $header);
+                    $retry[$k] = $this->RpcRequest($calls[$k], $r['header']);
                 }
-                continue;
             }
-            $out[$k] = $this->RpcResult($res);
         }
-        if (count($retry) > 0) {
-            foreach ($this->HttpBatch($retry) as $k => $res) {
-                $out[$k] = $res['code'] === 401
-                    ? ['ok' => false, 'result' => null, 'err' => 'auth_wrong', 'msg' => '']
-                    : $this->RpcResult($res);
-            }
+        foreach ($this->HttpBatch($retry) as $k => $res) {
+            $out[$k] = $res['code'] === 401 ? $fail('auth_wrong') : $this->RpcResult($res);
         }
         return $out;
+    }
+
+    /** @return array{header:string,err:string,msg:string} */
+    private function AnswerChallenge(string $challenge, string $password): array
+    {
+        if ($password === '') {
+            return ['header' => '', 'err' => 'auth_missing', 'msg' => ''];
+        }
+        $header = $this->DigestHeader($challenge, $password);
+        if ($header === '') {
+            return ['header' => '', 'err' => 'rpc', 'msg' => 'Anmeldung: unbekanntes Verfahren'];
+        }
+        return ['header' => $header, 'err' => '', 'msg' => ''];
     }
 
     private function RpcRequest(array $call, string $authHeader): array
@@ -759,6 +809,9 @@ class ShellyFWCheck extends IPSModule
             return $e['note'];
         }
         if ($e['avail'] !== '') {
+            if (strpos($e['note'], 'Aktualisiert') === 0) {
+                return 'Weiteres Update verfügbar (gerade aktualisiert)';
+            }
             return 'Update verfügbar' . ($e['note'] !== '' ? ' (' . $e['note'] . ')' : '');
         }
         return 'Aktuell';
