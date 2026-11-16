@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 6 (16.11.2026)
+
+#### Neu
+- Mehrstufige Updates: Erledigt ein Gerät nach dem Start nur einen Zwischenschritt (Neustart, meldet aber weiter die alte Version), erkennt das Modul das und stößt das Update nach etwa einer Minute selbst erneut an (höchstens 4 Anstöße). Im Status steht dann „Schritt 2“.
+
+#### Geändert
+- Status während eines Updates zeigt nach 3 Minuten, dass das Gerät noch die alte Version meldet (Updates in mehreren Schritten dauern länger).
+- Wird ein Update nach 15 Minuten nicht bestätigt, steht in der Zeile klar, was zu tun ist (erneut starten oder in der Weboberfläche nachsehen).
+
 ### Build 5 (16.11.2026)
 
 #### Neu

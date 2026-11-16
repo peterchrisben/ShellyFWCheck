@@ -2,7 +2,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 5)
+Aktuelle Version: 1.0 (Build 6)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -32,7 +32,7 @@ Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zei
 | Ausgewählte aktualisieren | startet die Updates für alle Geräte mit Haken in der Spalte „Auswahl“ der Übersicht (Haken gibt es nur bei Geräten mit verfügbarem Update) |
 | Alle Updates starten | startet alle verfügbaren Updates nacheinander, mit Pause dazwischen (Standard 20 Sekunden) |
 
-Nach dem Start eines Updates fragt das Modul jede Minute nach, bis das Gerät die neue Version meldet („Aktualisiert“). Bleibt die Version 15 Minuten unverändert, steht „Update nicht bestätigt“ in der Zeile.
+Nach dem Start eines Updates fragt das Modul jede Minute nach, bis das Gerät die neue Version meldet („Aktualisiert“). Manche Updates laufen im Gerät in mehreren Schritten: Nach dem ersten Anstoß startet das Gerät neu, meldet aber weiter die alte Version. Das Modul erkennt diesen Zwischenschritt und stößt das Update nach etwa einer Minute selbst erneut an (Status „Schritt 2“). Bleibt die Version 15 Minuten unverändert, wird das Gerät wieder freigegeben („Update verfügbar – nicht bestätigt …“) und kann erneut gestartet werden. Schließt das Gerät das Update später von selbst ab, zeigt die nächste Abfrage „Aktuell“.
 
 Ein Klick auf die **IP-Adresse** in der Übersicht öffnet die Weboberfläche des Geräts in einem neuen Fenster.
 

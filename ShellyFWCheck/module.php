@@ -14,6 +14,7 @@ class ShellyFWCheck extends IPSModule
     private const DNSSD_GUID = '{780B2D48-916C-4D59-AD35-5A429B2355A5}';
     private const VERIFY_SECONDS = 60;      // Abstand der Kontrollabfragen nach einem Update
     private const VERIFY_MAX = 900;         // so lange (Sekunden) wird auf die neue Version gewartet
+    private const MAX_STEPS = 4;            // höchstens so viele Anstöße je Update (mehrstufige Updates)
 
     public function Create()
     {
@@ -159,6 +160,7 @@ class ShellyFWCheck extends IPSModule
             $infos = $this->HttpBatch($requests);
 
             $calls = [];
+            $again = [];
             foreach ($rows as $row) {
                 $k = $this->HostKey($row['Host']);
                 $e = $state[$k] ?? $this->EmptyEntry();
@@ -190,6 +192,7 @@ class ShellyFWCheck extends IPSModule
                 $e['gen'] = (int) $data['gen'];
                 $e['ver'] = (string) ($data['ver'] ?? '');
                 $e['auth'] = (bool) ($data['auth_en'] ?? false);
+                $e['slot'] = isset($data['slot']) ? (int) $data['slot'] : -1;
 
                 if ($e['upd_start'] > 0) {
                     // Update wurde gestartet: nur auf die neue Version warten
@@ -198,10 +201,18 @@ class ShellyFWCheck extends IPSModule
                         $e['upd_start'] = 0;
                         $e['avail'] = '';
                         $e['note'] = 'Aktualisiert (vorher ' . $e['upd_from'] . ')';
+                    } elseif ($e['slot'] >= 0 && $e['upd_slot'] >= 0 && $e['slot'] !== $e['upd_slot'] && $e['upd_tries'] < self::MAX_STEPS) {
+                        // Gerät hat neu gestartet (anderer Speicherplatz), meldet aber die alte Version:
+                        // Zwischenschritt eines mehrstufigen Updates. Eine Runde abwarten, dann erneut anstoßen.
+                        if ($e['upd_step'] === 0) {
+                            $e['upd_step'] = $now;
+                        } elseif ($now - $e['upd_step'] >= $this->StepWait()) {
+                            $again[$k] = $row;
+                        }
                     } elseif ($now - $e['upd_start'] > self::VERIFY_MAX) {
                         $this->LogMessage($e['name'] . ': Update nicht bestätigt – Version ist weiter ' . $e['ver'], KL_WARNING);
                         $e['upd_start'] = 0;
-                        $e['note'] = 'Update nicht bestätigt – Version unverändert';
+                        $e['note'] = 'nach ' . (int) (self::VERIFY_MAX / 60) . ' Minuten weiter ' . $e['ver'] . ' – erneut starten oder in der Weboberfläche nachsehen';
                     }
                     if ($e['upd_start'] > 0) {
                         $state[$k] = $e;
@@ -218,8 +229,31 @@ class ShellyFWCheck extends IPSModule
             foreach ($state as $k => $e) {
                 if (($e['upd_start'] ?? 0) > 0 && !$e['online'] && $now - $e['upd_start'] > self::VERIFY_MAX) {
                     $state[$k]['upd_start'] = 0;
-                    $state[$k]['note'] = 'Update nicht bestätigt – Gerät nicht erreichbar';
+                    $state[$k]['note'] = 'Update nicht bestätigt – Gerät seit dem Start nicht erreichbar';
                 }
+            }
+
+            // Mehrstufige Updates: nächsten Schritt anstoßen
+            $steps = [];
+            foreach ($again as $k => $row) {
+                $steps[$k] = ['host' => $row['Host'], 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
+                    'timeout' => 20, 'password' => $this->PasswordFor($row), 'auth' => $state[$k]['auth']];
+            }
+            foreach ($this->RpcBatch($steps) as $k => $res) {
+                $e = $state[$k];
+                if ($res['ok']) {
+                    $e['upd_tries']++;
+                    $e['upd_start'] = $now;
+                    $e['upd_slot'] = $e['slot'];
+                    $e['upd_step'] = 0;
+                    $this->LogMessage($e['name'] . ': Zwischenschritt erledigt (weiter ' . $e['ver'] . ') – Update auf ' . $e['upd_target']
+                        . ' erneut angestoßen (Schritt ' . $e['upd_tries'] . ')', KL_NOTIFY);
+                } else {
+                    $e['upd_start'] = 0;
+                    $e['note'] = 'Zwischenschritt erledigt, nächster Schritt nicht gestartet' . ($res['msg'] !== '' ? ': ' . $res['msg'] : '');
+                    $this->LogMessage($e['name'] . ': ' . $e['note'], KL_WARNING);
+                }
+                $state[$k] = $e;
             }
 
             // 2. Schritt: nach Updates fragen (das Gerät fragt dafür selbst beim Shelly-Server nach)
@@ -443,6 +477,9 @@ class ShellyFWCheck extends IPSModule
         $e['upd_start'] = time();
         $e['upd_from'] = $e['ver'];
         $e['upd_target'] = $e['avail'];
+        $e['upd_slot'] = $e['slot'];
+        $e['upd_tries'] = 1;
+        $e['upd_step'] = 0;
         $e['note'] = '';
         $state[$k] = $e;
         $this->WriteState($state);
@@ -465,6 +502,12 @@ class ShellyFWCheck extends IPSModule
         $this->StartUpdate($host, $message);
         $this->SendDebug('Update', (string) $message, 0);
         $this->RefreshForm();
+    }
+
+    /** Wartezeit (Sekunden) zwischen erkanntem Zwischenschritt und erneutem Anstoß. */
+    protected function StepWait(): int
+    {
+        return 50;
     }
 
     private function UpdatesRunning(): bool
@@ -765,7 +808,7 @@ class ShellyFWCheck extends IPSModule
     {
         return ['id' => '', 'name' => '', 'model' => '', 'gen' => 0, 'ver' => '', 'avail' => '', 'auth' => false,
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
-            'upd_start' => 0, 'upd_from' => '', 'upd_target' => ''];
+            'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0];
     }
 
     private function ReadState(): array
@@ -788,7 +831,10 @@ class ShellyFWCheck extends IPSModule
     private function StateText(array $e): string
     {
         if ($e['upd_start'] > 0) {
-            return 'Update auf ' . $e['upd_target'] . ' läuft … (gestartet ' . date('H:i', $e['upd_start']) . ')';
+            $minutes = (int) floor((time() - $e['upd_start']) / 60);
+            return 'Update auf ' . $e['upd_target'] . ' läuft … (' . ($e['upd_tries'] > 1 ? 'Schritt ' . $e['upd_tries'] . ', ' : '')
+                . 'gestartet ' . date('H:i', $e['upd_start'])
+                . ($minutes >= 3 && $e['online'] ? ', Gerät meldet noch ' . $e['ver'] . ' – Updates in mehreren Schritten dauern länger' : '') . ')';
         }
         switch ($e['err']) {
             case 'offline':
@@ -812,7 +858,7 @@ class ShellyFWCheck extends IPSModule
             if (strpos($e['note'], 'Aktualisiert') === 0) {
                 return 'Weiteres Update verfügbar (gerade aktualisiert)';
             }
-            return 'Update verfügbar' . ($e['note'] !== '' ? ' (' . $e['note'] . ')' : '');
+            return 'Update verfügbar' . ($e['note'] !== '' ? ' – nicht bestätigt: ' . $e['note'] : '');
         }
         return 'Aktuell';
     }
