@@ -157,7 +157,6 @@
             "Auf": "To",
             "Ausgelöst durch": "Triggered by",
             "Die letzten 50 Versionswechsel, neueste zuerst. „Gerät selbst / von außen“ heißt: Auto-Update des Geräts, Weboberfläche oder App.": "The last 50 version changes, newest first. \"Device itself / from outside\" means: auto update of the device, web interface or app.",
-            "%s: Batteriegerät ist wach – vorgemerktes Update auf %s gestartet": "%s: battery device is awake – scheduled update to %s started",
             "%s: vorgemerktes Update nicht gestartet – %s": "%s: scheduled update not started – %s",
             "%d Batteriegeräte schlafen – ihre Updates sind vorgemerkt und starten beim nächsten Aufwachen.": "%d battery devices are sleeping – their updates are scheduled and start when they next wake up.",
             "%s: Batteriegerät schläft – Update auf %s ist vorgemerkt und startet beim nächsten Aufwachen.": "%s: battery device is sleeping – update to %s is scheduled and starts when it next wakes up.",
@@ -169,7 +168,10 @@
             "%s: Update ist schon vorgemerkt und startet beim nächsten Aufwachen.": "%s: update is already scheduled and starts when the device next wakes up.",
             "%s: Batteriegerät schläft – beim nächsten Aufwachen wird nach einem Update gesehen und es gleich gestartet.": "%s: battery device is sleeping – when it next wakes up, the module looks for an update and starts it right away.",
             "%s: Batteriegerät ist wach – kein Update verfügbar, Vormerkung erledigt": "%s: battery device is awake – no update available, scheduled update cleared",
-            "Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten": "Scheduled – look for an update and start it when the device next wakes up"
+            "Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten": "Scheduled – look for an update and start it when the device next wakes up",
+            "%s: Batteriegerät ist wach – vorgemerktes Update gestartet": "%s: battery device is awake – scheduled update started",
+            "neueste Version": "latest version",
+            "Kein Update gemeldet (Batteriegerät – Angabe unsicher)": "No update reported (battery device – not reliable)"
         }
     }
 }

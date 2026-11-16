@@ -387,10 +387,12 @@ class ShellyFWCheck extends IPSModule
                 }
                 $state[$k] = $e;
                 if ($row['Battery']) {
-                    // Sys.GetStatus antwortet sofort mit den Updates, die sich das Gerät selbst gemerkt hat (alle 24 h erneuert).
-                    // Shelly.CheckForUpdate fragt beim Hersteller nach und dauert länger, als ein Batteriegerät wach bleibt.
-                    $fast[$k] = ['host' => $row['Host'], 'method' => 'Sys.GetStatus', 'params' => [],
-                        'timeout' => 5, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
+                    // Batteriegeräte sind nur rund 2 Sekunden wach. Vorgemerkt: sofort Shelly.Update – das Gerät holt sich
+                    // die Update-Angaben selbst. Sonst nur Sys.GetStatus (antwortet sofort; nach dem Aufwachen ist die
+                    // Update-Liste darin allerdings meist leer, an Chris' H&T beobachtet).
+                    $fast[$k] = ['host' => $row['Host'], 'method' => ($e['pending'] && $e['upd_start'] === 0) ? 'Shelly.Update' : 'Sys.GetStatus',
+                        'params' => ($e['pending'] && $e['upd_start'] === 0) ? ['stage' => 'stable'] : [],
+                        'timeout' => ($e['pending'] && $e['upd_start'] === 0) ? 15 : 5, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
                     continue;
                 }
                 $calls[$k] = ['host' => $row['Host'], 'method' => 'Shelly.CheckForUpdate', 'params' => [],
@@ -409,52 +411,93 @@ class ShellyFWCheck extends IPSModule
             }
 
             // Batteriegeräte zuerst – sie schlafen bald wieder ein
-            $wakeStart = [];
+            $hosts = [];
+            foreach ($rows as $row) {
+                $hosts[$this->HostKey($row['Host'])] = $row;
+            }
+            $fallback = [];
             foreach ($this->RpcBatch($fast) as $k => $res) {
                 $e = $state[$k];
-                if (!$res['ok']) {
-                    if ($res['err'] === 'offline') {
-                        $e['online'] = false;
-                        $e['err'] = 'sleep';   // schon wieder eingeschlafen – kein Fehler
+                $isUpdate = $fast[$k]['method'] === 'Shelly.Update';
+                if (!$res['ok'] && $res['err'] === 'offline') {
+                    $e['online'] = false;
+                    $e['err'] = 'sleep';   // schon wieder eingeschlafen – kein Fehler; Vormerkung bleibt
+                    $state[$k] = $e;
+                    continue;
+                }
+                if ($isUpdate) {
+                    if ($res['ok']) {
+                        $e = $this->MarkStarted($e, $now);
+                        unset($found[$k]);
+                        $this->LogMessage($this->T('%s: Batteriegerät ist wach – vorgemerktes Update gestartet', $e['name']), KL_NOTIFY);
+                        $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
                     } else {
-                        $e['err'] = $res['err'];
-                        $e['msg'] = $res['msg'];
+                        // Gerät lehnt ab (z. B. noch keine Update-Angaben): beim Hersteller nachfragen, solange es wach ist
+                        $this->SendDebug('Batteriegerät', $e['name'] . ': Shelly.Update abgelehnt (' . $res['msg'] . ') – frage nach Update', 0);
+                        $fallback[$k] = ['host' => $hosts[$k]['Host'], 'method' => 'Shelly.CheckForUpdate', 'params' => [],
+                            'timeout' => 20, 'password' => $this->PasswordFor($hosts[$k]), 'auth' => $e['auth']];
                     }
                     $state[$k] = $e;
                     continue;
                 }
-                $e = $this->ApplyAvail($e, (string) ($res['result']['available_updates']['stable']['version'] ?? ''), $k, $found);
-                if ($e['pending'] && $e['upd_start'] === 0) {
-                    if ($e['avail'] !== '') {
-                        $wakeStart[$k] = ['host' => $e['host'] ?? '', 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
-                            'timeout' => 10, 'password' => '', 'auth' => $e['auth']];
-                    } else {
-                        $e['pending'] = false;   // nichts zu tun: Gerät ist aktuell
-                        $this->LogMessage($this->T('%s: Batteriegerät ist wach – kein Update verfügbar, Vormerkung erledigt', $e['name']), KL_NOTIFY);
+                if (!$res['ok']) {
+                    $e['err'] = $res['err'];
+                    $e['msg'] = $res['msg'];
+                    $state[$k] = $e;
+                    continue;
+                }
+                // Sys.GetStatus: gemeldetes Update, sonst Ableitung aus Geräten gleichen Modells
+                $reported = (string) ($res['result']['available_updates']['stable']['version'] ?? '');
+                $e['sure'] = $reported !== '';
+                $e = $this->ApplyAvail($e, $reported !== '' ? $reported : $this->SiblingVersion($state, $e), $k, $found);
+                $state[$k] = $e;
+            }
+            // Ausweichweg für vorgemerkte Geräte: Update-Abfrage, bei Erfolg gleich starten
+            $retry = [];
+            foreach ($this->RpcBatch($fallback) as $k => $res) {
+                $e = $state[$k];
+                if (!$res['ok']) {
+                    if ($res['err'] === 'offline') {
+                        $e['online'] = false;
+                        $e['err'] = 'sleep';
                     }
+                    $this->LogMessage($this->T('%s: vorgemerktes Update nicht gestartet – %s', $e['name'], $this->ErrorText($res)), KL_WARNING);
+                    $state[$k] = $e;
+                    continue;
+                }
+                $e['sure'] = true;
+                $e = $this->ApplyAvail($e, (string) ($res['result']['stable']['version'] ?? ''), $k, $found);
+                if ($e['avail'] === '') {
+                    $e['pending'] = false;
+                    $this->LogMessage($this->T('%s: Batteriegerät ist wach – kein Update verfügbar, Vormerkung erledigt', $e['name']), KL_NOTIFY);
+                } else {
+                    $retry[$k] = ['host' => $hosts[$k]['Host'], 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
+                        'timeout' => 15, 'password' => $this->PasswordFor($hosts[$k]), 'auth' => $e['auth']];
                 }
                 $state[$k] = $e;
             }
-            // vorgemerkte Updates sofort starten, solange das Gerät wach ist
-            foreach ($rows as $row) {
-                $k = $this->HostKey($row['Host']);
-                if (isset($wakeStart[$k])) {
-                    $wakeStart[$k]['host'] = $row['Host'];
-                    $wakeStart[$k]['password'] = $this->PasswordFor($row);
-                }
-            }
-            foreach ($this->RpcBatch($wakeStart) as $k => $res) {
+            foreach ($this->RpcBatch($retry) as $k => $res) {
                 $e = $state[$k];
                 if ($res['ok']) {
                     $e = $this->MarkStarted($e, $now);
                     unset($found[$k]);
-                    $this->LogMessage($this->T('%s: Batteriegerät ist wach – vorgemerktes Update auf %s gestartet', $e['name'], $e['upd_target']), KL_NOTIFY);
+                    $this->LogMessage($this->T('%s: Batteriegerät ist wach – vorgemerktes Update gestartet', $e['name']), KL_NOTIFY);
                     $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
                 } else {
-                    // bleibt vorgemerkt und wird beim nächsten Aufwachen erneut versucht
                     $this->LogMessage($this->T('%s: vorgemerktes Update nicht gestartet – %s', $e['name'], $this->ErrorText($res)), KL_WARNING);
                 }
                 $state[$k] = $e;
+            }
+            // schlafende Batteriegeräte: Update aus Geräten gleichen Modells ableiten
+            foreach ($rows as $row) {
+                $k = $this->HostKey($row['Host']);
+                $e = $state[$k];
+                if ($row['Battery'] && $e['err'] === 'sleep' && $e['avail'] === '' && $e['ver'] !== '' && $e['upd_start'] === 0) {
+                    $sibling = $this->SiblingVersion($state, $e);
+                    if ($sibling !== '') {
+                        $state[$k] = $this->ApplyAvail($e, $sibling, $k, $found);
+                    }
+                }
             }
 
             // Mehrstufige Updates: nächsten Schritt anstoßen
@@ -492,6 +535,7 @@ class ShellyFWCheck extends IPSModule
                     $e['err'] = $res['err'];
                     $e['msg'] = $res['msg'];
                 } else {
+                    $e['sure'] = true;
                     $e = $this->ApplyAvail($e, (string) ($res['result']['stable']['version'] ?? ''), $k, $found);
                 }
                 $state[$k] = $e;
@@ -565,6 +609,26 @@ class ShellyFWCheck extends IPSModule
         }
         $e['avail'] = $avail;
         return $e;
+    }
+
+    /**
+     * Neueste stabile Version, die ein anderes Gerät gleichen Modells installiert hat oder angeboten bekommt –
+     * nur wenn sie neuer ist als die des Geräts. Batteriegeräte melden ihr Update nach dem Aufwachen meist nicht.
+     */
+    private function SiblingVersion(array $state, array $e): string
+    {
+        $best = '';
+        foreach ($state as $other) {
+            if (!is_array($other) || ($other['model'] ?? '') !== $e['model'] || $e['model'] === '' || ($other['id'] ?? '') === $e['id']) {
+                continue;
+            }
+            foreach ([(string) ($other['ver'] ?? ''), (string) ($other['avail'] ?? '')] as $v) {
+                if ($v !== '' && strpos($v, '-') === false && ($best === '' || version_compare($v, $best, '>'))) {
+                    $best = $v;
+                }
+            }
+        }
+        return ($best !== '' && $e['ver'] !== '' && version_compare($best, $e['ver'], '>')) ? $best : '';
     }
 
     /** Merker setzen: Update auf die verfügbare Version wurde gerade angestoßen. */
@@ -1468,7 +1532,7 @@ class ShellyFWCheck extends IPSModule
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
             'auto' => '', 'auto_spec' => '', 'auto_jobs' => [],
             'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0,
-            'upd_chain' => 0, 'battery' => false, 'pending' => false];
+            'upd_chain' => 0, 'battery' => false, 'pending' => false, 'sure' => false];
     }
 
     private function ReadState(): array
@@ -1536,7 +1600,7 @@ class ShellyFWCheck extends IPSModule
             if ($e['battery'] && !$e['online']) {
                 $parts[] = $this->T('Bestätigung beim nächsten Aufwachen');
             }
-            return $this->T('Update auf %s läuft …', $e['upd_target']) . ' (' . implode(', ', $parts) . ')';
+            return $this->T('Update auf %s läuft …', $e['upd_target'] !== '' ? $e['upd_target'] : $this->T('neueste Version')) . ' (' . implode(', ', $parts) . ')';
         }
         if ($e['pending']) {
             return $e['avail'] !== '' ? $this->T('Update auf %s vorgemerkt – startet beim nächsten Aufwachen', $e['avail'])
@@ -1565,6 +1629,9 @@ class ShellyFWCheck extends IPSModule
         }
         if ($e['note'] !== '' && $e['avail'] === '') {
             return $this->NoteText($e['note']);
+        }
+        if ($e['battery'] && $e['avail'] === '' && !$e['sure']) {
+            return $this->T('Kein Update gemeldet (Batteriegerät – Angabe unsicher)');
         }
         if ($e['avail'] !== '') {
             if ($this->NoteIsDone($e['note'])) {

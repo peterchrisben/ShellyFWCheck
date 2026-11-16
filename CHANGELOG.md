@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 16 (16.11.2026)
+
+#### Geändert
+- Vorgemerkte Batteriegeräte bekommen beim Aufwachen sofort den Update-Befehl (vorher erst eine Abfrage). Lehnt das Gerät ab, fragt das Modul nach und startet ein vorhandenes Update gleich danach.
+- Update für Batteriegeräte wird auch aus Geräten gleichen Modells abgeleitet (z. B. ein anderer H&T läuft schon mit neuerer Firmware).
+
+#### Behoben
+- Batteriegerät wurde nach dem Aufwachen als „Aktuell“ gezeigt, obwohl ein Update existiert: Das Gerät meldet direkt nach dem Aufwachen keine Updates. Jetzt „Kein Update gemeldet (Batteriegerät – Angabe unsicher)“, wenn nichts bekannt ist.
+
 ### Build 15 (16.11.2026)
 
 #### Geändert
