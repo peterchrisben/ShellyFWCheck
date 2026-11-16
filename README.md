@@ -1,5 +1,7 @@
 # ShellyFWCheck
 
+🇬🇧 [English documentation](README.en.md)
+
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
 Aktuelle Version: 1.0 (Build 12)
@@ -32,7 +34,7 @@ Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zei
 | Knopf | Was passiert |
 |---|---|
 | Jetzt prüfen | fragt alle aktiven Geräte ab |
-| Geräte im Netzwerk suchen | sucht Shellys per mDNS; neue Geräte und geänderte IP-Adressen werden unter „Geräte verwalten“ eingetragen (wirksam nach „Änderungen übernehmen“) |
+| Geräte im Netzwerk suchen | sucht Shellys per mDNS (und in den zusätzlichen Adressbereichen); neue Geräte und geänderte IP-Adressen werden unter „Geräte verwalten“ eingetragen (wirksam nach „Änderungen übernehmen“) |
 | Ausgewählte aktualisieren | startet die Updates für alle Geräte mit Haken in der Spalte „Auswahl“ der Übersicht (gestartet werden nur Geräte mit verfügbarem Update) |
 | Alle Updates starten | startet alle verfügbaren Updates nacheinander, mit Pause dazwischen (Standard 20 Sekunden) |
 
@@ -52,9 +54,7 @@ Umstellen: Haken bei den Geräten setzen und in der Zeile „Auto-Update im Ger�
 
 **Bedienung aus der Visualisierung:** Mit dem Haken „Bedienung aus der Visualisierung freigeben“ unter „Updates“ legt das Modul die Variable „Befehl“ an (Jetzt prüfen / Alle Updates starten). Ohne Freigabe gibt es die Variable nicht. Achtung: „Alle Updates starten“ läuft aus der Visualisierung ohne Rückfrage.
 
-Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot).
-
-Batteriegeräte schlafen meist und zeigen dann „Nicht erreichbar“. Wer sie nicht in der Übersicht haben möchte, nimmt den Haken **Aktiv** heraus.
+Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft (blau) · Aktualisiert (grün) · Nicht erreichbar / Passwort fehlt / Passwort falsch / Fehler (rot) · Schläft (Batteriegeräte, ohne Farbe).
 
 ## Variablen
 
@@ -97,4 +97,4 @@ Shelly ist eine Marke ihres jeweiligen Inhabers. ShellyFWCheck ist ein privates 
 
 Das Modul gibt es auf Deutsch und Englisch – Symcon wählt die Sprache von selbst. Variablen behalten den Namen aus der Sprache, in der die Instanz angelegt wurde.
 
-**English:** Shelly Firmware-Check shows the installed and the available firmware of all Shelly devices (Gen2 and newer) in one list and starts updates from Symcon – locally, without cloud or app. Form, messages and variables are available in English; this documentation is German only.
+English documentation: [README.en.md](README.en.md)
