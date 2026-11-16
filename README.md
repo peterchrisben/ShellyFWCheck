@@ -14,6 +14,11 @@ Aktuelle Version: 1.0 (Build 12)
 - Shelly-Geräte ab **Gen2** (Plus, Pro, Mini, Gen3, Gen4). Gen1-Geräte werden erkannt, aber nicht unterstützt.
 - Die Geräte müssen von Symcon aus per IP erreichbar sein und selbst ins Internet dürfen (sie laden die Firmware direkt vom Hersteller).
 
+## Installation
+
+- **Module Store:** nach „Shelly Firmware-Check“ suchen und installieren. Das Modul steht derzeit im **Beta-Kanal** – Beta-Module müssen dafür in den Store-Einstellungen zugelassen sein.
+- **oder Modulverwaltung:** Hinzufügen → `https://github.com/peterchrisben/ShellyFWCheck`
+
 ## Einrichtung
 
 1. Instanz hinzufügen → **Shelly Firmware-Check**.
