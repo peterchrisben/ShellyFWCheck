@@ -59,6 +59,7 @@ class ShellyFWCheck extends IPSModule
             $this->WriteState($pruned);
         }
         $this->SetBuffer('Queue', '[]');
+        $this->SetBuffer('Selected', '[]');
         $this->SetTimerInterval('Queue', 0);
 
         $active = $this->ActiveRows();
@@ -99,6 +100,11 @@ class ShellyFWCheck extends IPSModule
                 break;
             case 'UpdateAll':
                 $this->UpdateAll();
+                break;
+            case 'Select':
+                // Haken in der Übersicht merken, damit sie eine Auffrischung der Liste überstehen
+                $hosts = json_decode((string) $Value, true);
+                $this->SetBuffer('Selected', json_encode(is_array($hosts) ? array_values(array_map([$this, 'HostKey'], array_map('strval', $hosts))) : []));
                 break;
             case 'UpdateDevice':
                 $this->UpdateDevice((string) $Value);
@@ -246,7 +252,7 @@ class ShellyFWCheck extends IPSModule
     {
         $Host = $this->CleanHost($Host);
         if ($Host === '') {
-            $this->ShowResult('Bitte erst eine Zeile in der Übersicht markieren.');
+            $this->ShowResult('Kein Gerät angegeben.');
             return false;
         }
         $ok = $this->StartUpdate($Host, $message);
@@ -258,24 +264,54 @@ class ShellyFWCheck extends IPSModule
     /** Alle verfügbaren Updates nacheinander starten. Rückgabe: Anzahl der Geräte. */
     public function UpdateAll(): int
     {
+        return $this->QueueUpdates(null);
+    }
+
+    /** Updates für ausgewählte Geräte starten. Hosts = JSON-Liste der IP-Adressen, z. B. '["192.168.1.50","192.168.1.51"]'. */
+    public function UpdateSelected(string $Hosts): int
+    {
+        $list = json_decode($Hosts, true);
+        if (!is_array($list) || count($list) === 0) {
+            $this->ShowResult('Nichts ausgewählt – in der Übersicht in der Spalte „Auswahl“ Haken setzen.');
+            return 0;
+        }
+        return $this->QueueUpdates(array_map([$this, 'HostKey'], array_map('strval', $list)));
+    }
+
+    /** @param string[]|null $only Host-Schlüssel, null = alle */
+    private function QueueUpdates(?array $only): int
+    {
         $state = $this->ReadState();
         $queue = [];
         foreach ($this->ActiveRows() as $row) {
-            $e = $state[$this->HostKey($row['Host'])] ?? null;
-            if ($e !== null && $e['online'] && $e['err'] === '' && $e['avail'] !== '' && $e['upd_start'] === 0) {
+            $k = $this->HostKey($row['Host']);
+            if ($only !== null && !in_array($k, $only, true)) {
+                continue;
+            }
+            if ($this->CanUpdate($state[$k] ?? null)) {
                 $queue[] = $row['Host'];
             }
         }
         if (count($queue) === 0) {
-            $this->ShowResult('Kein Gerät mit verfügbarem Update – ggf. erst „Jetzt prüfen“.');
+            $this->ShowResult($only === null
+                ? 'Kein Gerät mit verfügbarem Update – ggf. erst „Jetzt prüfen“.'
+                : 'Für die Auswahl ist kein Update verfügbar (oder es läuft schon).');
             return 0;
         }
         $count = count($queue);
         $gap = max(5, $this->ReadPropertyInteger('UpdateGap'));
+        $this->SetBuffer('Selected', '[]');
         $this->SetBuffer('Queue', json_encode($queue));
         $this->WorkQueue();
-        $this->ShowResult($count . ' Update(s) eingeplant – ein Gerät alle ' . $gap . ' Sekunden. Der Status in der Liste zeigt den Fortschritt.');
+        $this->ShowResult($count === 1
+            ? '1 Update gestartet. Der Status in der Übersicht zeigt den Fortschritt.'
+            : $count . ' Updates eingeplant – ein Gerät alle ' . $gap . ' Sekunden. Der Status in der Übersicht zeigt den Fortschritt.');
         return $count;
+    }
+
+    private function CanUpdate(?array $e): bool
+    {
+        return $e !== null && $e['online'] && $e['err'] === '' && $e['avail'] !== '' && $e['upd_start'] === 0;
     }
 
     /** Shellys per mDNS suchen und in die Liste eintragen (wirksam erst nach „Änderungen übernehmen“). */
@@ -767,13 +803,19 @@ class ShellyFWCheck extends IPSModule
     {
         $state = $this->ReadState();
         $colors = [0 => '', 1 => '#FFFFC0', 2 => '#C0C0FF', 3 => '#FFC0C0', 4 => '#C0FFC0'];
+        $selected = json_decode($this->GetBuffer('Selected'), true);
+        $selected = is_array($selected) ? $selected : [];
         $list = [];
         foreach ($rows as $row) {
             if (!$row['Active']) {
                 continue;
             }
-            $e = $state[$this->HostKey($row['Host'])] ?? $this->EmptyEntry();
+            $k = $this->HostKey($row['Host']);
+            $e = $state[$k] ?? $this->EmptyEntry();
+            $can = $this->CanUpdate($e);
             $list[] = [
+                'Select'    => $can && in_array($k, $selected, true),
+                'editable'  => $can,   // Haken nur dort, wo ein Update verfügbar ist
                 'Name'      => $e['name'],
                 'Host'      => $row['Host'],
                 'Model'     => $e['model'],

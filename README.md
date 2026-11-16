@@ -1,8 +1,8 @@
 # ShellyFWCheck
 
-Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln oder alle nacheinander. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
+Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 2)
+Aktuelle Version: 1.0 (Build 3)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -29,7 +29,7 @@ Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zei
 |---|---|
 | Jetzt prüfen | fragt alle aktiven Geräte ab |
 | Geräte im Netzwerk suchen | sucht Shellys per mDNS; neue Geräte und geänderte IP-Adressen werden unter „Geräte verwalten“ eingetragen (wirksam nach „Änderungen übernehmen“) |
-| Markiertes Gerät aktualisieren | startet das Update für die in der Übersicht markierte Zeile |
+| Ausgewählte aktualisieren | startet die Updates für alle Geräte mit Haken in der Spalte „Auswahl“ der Übersicht (Haken gibt es nur bei Geräten mit verfügbarem Update) |
 | Alle Updates starten | startet alle verfügbaren Updates nacheinander, mit Pause dazwischen (Standard 20 Sekunden) |
 
 Nach dem Start eines Updates fragt das Modul jede Minute nach, bis das Gerät die neue Version meldet („Aktualisiert“). Bleibt die Version 15 Minuten unverändert, steht „Update nicht bestätigt“ in der Zeile.
@@ -54,6 +54,7 @@ Batteriegeräte schlafen meist und zeigen dann „Nicht erreichbar“. Wer sie n
 ```php
 SFW_CheckAll($id);                      // alle Geräte prüfen
 SFW_UpdateDevice($id, '192.168.1.50');  // Update für ein Gerät starten
+SFW_UpdateSelected($id, '["192.168.1.50","192.168.1.51"]'); // Updates für mehrere Geräte nacheinander starten
 SFW_UpdateAll($id);                     // alle verfügbaren Updates nacheinander starten, liefert die Anzahl
 SFW_Discover($id);                      // Gerätesuche (trägt nur ins offene Formular ein)
 SFW_GetDevices($id);                    // Stand aller Geräte als JSON

@@ -1,43 +1,131 @@
 {
   "elements": [
-    { "type": "Label", "name": "Overview", "caption": "" },
     {
-      "type": "ExpansionPanel", "name": "PanelPassword", "caption": "Passwort", "expanded": false,
+      "type": "Label",
+      "name": "Overview",
+      "caption": ""
+    },
+    {
+      "type": "ExpansionPanel",
+      "name": "PanelPassword",
+      "caption": "Passwort",
+      "expanded": false,
       "items": [
-        { "type": "PasswordTextBox", "name": "MasterPassword", "caption": "Master-Passwort (für alle Geräte)", "width": "360px" },
-        { "type": "Label", "caption": "Gilt für alle Geräte ohne Haken bei „Eigenes PW“. Der Benutzername ist bei Shelly immer „admin“. Geräte ohne Passwortschutz brauchen nichts." }
+        {
+          "type": "PasswordTextBox",
+          "name": "MasterPassword",
+          "caption": "Master-Passwort (für alle Geräte)",
+          "width": "360px"
+        },
+        {
+          "type": "Label",
+          "caption": "Gilt für alle Geräte ohne Haken bei „Eigenes PW“. Der Benutzername ist bei Shelly immer „admin“. Geräte ohne Passwortschutz brauchen nichts."
+        }
       ]
     },
     {
-      "type": "ExpansionPanel", "name": "PanelDevices", "caption": "Geräte verwalten", "expanded": false,
+      "type": "ExpansionPanel",
+      "name": "PanelDevices",
+      "caption": "Geräte verwalten",
+      "expanded": false,
       "items": [
         {
-          "type": "List", "name": "Devices", "caption": "", "rowCount": 12, "add": true, "delete": true,
+          "type": "List",
+          "name": "Devices",
+          "caption": "",
+          "rowCount": 12,
+          "add": true,
+          "delete": true,
           "loadValuesFromConfiguration": false,
           "columns": [
-            { "caption": "Aktiv", "name": "Active", "width": "70px", "add": true, "edit": { "type": "CheckBox" } },
-            { "caption": "Name", "name": "Name", "width": "auto", "add": "", "save": false },
-            { "caption": "IP-Adresse", "name": "Host", "width": "180px", "add": "", "edit": { "type": "ValidationTextBox" } },
-            { "caption": "Eigenes PW", "name": "OwnPassword", "width": "110px", "add": false, "edit": { "type": "CheckBox" } },
-            { "caption": "Passwort", "name": "Password", "width": "180px", "add": "", "edit": { "type": "PasswordTextBox" } }
+            {
+              "caption": "Aktiv",
+              "name": "Active",
+              "width": "70px",
+              "add": true,
+              "edit": {
+                "type": "CheckBox"
+              }
+            },
+            {
+              "caption": "Name",
+              "name": "Name",
+              "width": "auto",
+              "add": "",
+              "save": false
+            },
+            {
+              "caption": "IP-Adresse",
+              "name": "Host",
+              "width": "180px",
+              "add": "",
+              "edit": {
+                "type": "ValidationTextBox"
+              }
+            },
+            {
+              "caption": "Eigenes PW",
+              "name": "OwnPassword",
+              "width": "110px",
+              "add": false,
+              "edit": {
+                "type": "CheckBox"
+              }
+            },
+            {
+              "caption": "Passwort",
+              "name": "Password",
+              "width": "180px",
+              "add": "",
+              "edit": {
+                "type": "PasswordTextBox"
+              }
+            }
           ],
           "values": []
         },
-        { "type": "Label", "caption": "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Ob ein Passwort stimmt, zeigt die Übersicht unten nach „Änderungen übernehmen“." }
+        {
+          "type": "Label",
+          "caption": "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Ob ein Passwort stimmt, zeigt die Übersicht unten nach „Änderungen übernehmen“."
+        }
       ]
     },
     {
-      "type": "ExpansionPanel", "name": "PanelSettings", "caption": "Abfrage und Anzeige", "expanded": false,
+      "type": "ExpansionPanel",
+      "name": "PanelSettings",
+      "caption": "Abfrage und Anzeige",
+      "expanded": false,
       "items": [
         {
           "type": "RowLayout",
           "items": [
-            { "type": "NumberSpinner", "name": "CheckInterval", "caption": "Automatisch prüfen alle (Stunden, 0 = aus)", "minimum": 0, "maximum": 720, "width": "340px" },
-            { "type": "NumberSpinner", "name": "UpdateGap", "caption": "Pause zwischen zwei Updates (Sekunden)", "minimum": 5, "maximum": 600, "width": "340px" }
+            {
+              "type": "NumberSpinner",
+              "name": "CheckInterval",
+              "caption": "Automatisch prüfen alle (Stunden, 0 = aus)",
+              "minimum": 0,
+              "maximum": 720,
+              "width": "340px"
+            },
+            {
+              "type": "NumberSpinner",
+              "name": "UpdateGap",
+              "caption": "Pause zwischen zwei Updates (Sekunden)",
+              "minimum": 5,
+              "maximum": 600,
+              "width": "340px"
+            }
           ]
         },
-        { "type": "CheckBox", "name": "ShowTable", "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen" },
-        { "type": "Label", "caption": "Updates werden nie automatisch gestartet – nur über die Knöpfe unten oder per Skript." }
+        {
+          "type": "CheckBox",
+          "name": "ShowTable",
+          "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen"
+        },
+        {
+          "type": "Label",
+          "caption": "Updates werden nie automatisch gestartet – nur über die Knöpfe unten oder per Skript."
+        }
       ]
     }
   ],
@@ -45,24 +133,95 @@
     {
       "type": "RowLayout",
       "items": [
-        { "type": "Button", "caption": "Jetzt prüfen", "onClick": "SFW_CheckAll($id);" },
-        { "type": "Button", "caption": "Geräte im Netzwerk suchen", "onClick": "SFW_Discover($id);" },
-        { "type": "Button", "caption": "Markiertes Gerät aktualisieren", "onClick": "SFW_UpdateDevice($id, $Status['Host']);", "confirm": "Update für das markierte Gerät starten? Es startet dabei neu." },
-        { "type": "Button", "caption": "Alle Updates starten", "onClick": "SFW_UpdateAll($id);", "confirm": "Updates für alle Geräte mit verfügbarem Update nacheinander starten? Die Geräte starten dabei neu." }
+        {
+          "type": "Button",
+          "caption": "Jetzt prüfen",
+          "onClick": "SFW_CheckAll($id);"
+        },
+        {
+          "type": "Button",
+          "caption": "Geräte im Netzwerk suchen",
+          "onClick": "SFW_Discover($id);"
+        },
+        {
+          "type": "Button",
+          "caption": "Ausgewählte aktualisieren",
+          "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_UpdateSelected($id, json_encode($h));",
+          "confirm": "Updates für die Geräte mit Haken in der Spalte „Auswahl“ starten? Die Geräte starten dabei neu."
+        },
+        {
+          "type": "Button",
+          "caption": "Alle Updates starten",
+          "onClick": "SFW_UpdateAll($id);",
+          "confirm": "Updates für alle Geräte mit verfügbarem Update nacheinander starten? Die Geräte starten dabei neu."
+        }
       ]
     },
-    { "type": "Label", "name": "Result", "caption": "" },
     {
-      "type": "List", "name": "Status", "caption": "Übersicht", "rowCount": 15, "add": false, "delete": false,
+      "type": "Label",
+      "name": "Result",
+      "caption": ""
+    },
+    {
+      "type": "List",
+      "name": "Status",
+      "caption": "Übersicht",
+      "rowCount": 15,
+      "add": false,
+      "delete": false,
       "columns": [
-        { "caption": "Name", "name": "Name", "width": "260px", "add": "" },
-        { "caption": "IP-Adresse", "name": "Host", "width": "150px", "add": "" },
-        { "caption": "Modell", "name": "Model", "width": "160px", "add": "" },
-        { "caption": "Installiert", "name": "Installed", "width": "130px", "add": "" },
-        { "caption": "Verfügbar", "name": "Available", "width": "130px", "add": "" },
-        { "caption": "Status", "name": "State", "width": "auto", "add": "" }
+        {
+          "caption": "Auswahl",
+          "name": "Select",
+          "width": "90px",
+          "add": false,
+          "edit": {
+            "type": "CheckBox"
+          }
+        },
+        {
+          "caption": "Name",
+          "name": "Name",
+          "width": "260px",
+          "add": ""
+        },
+        {
+          "caption": "IP-Adresse",
+          "name": "Host",
+          "width": "150px",
+          "add": ""
+        },
+        {
+          "caption": "Modell",
+          "name": "Model",
+          "width": "160px",
+          "add": ""
+        },
+        {
+          "caption": "Installiert",
+          "name": "Installed",
+          "width": "130px",
+          "add": ""
+        },
+        {
+          "caption": "Verfügbar",
+          "name": "Available",
+          "width": "130px",
+          "add": ""
+        },
+        {
+          "caption": "Status",
+          "name": "State",
+          "width": "auto",
+          "add": ""
+        }
       ],
-      "values": []
+      "values": [],
+      "onEdit": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } IPS_RequestAction($id, 'Select', json_encode($h));"
+    },
+    {
+      "type": "Label",
+      "caption": "Haken in der Spalte „Auswahl“ lassen sich nur bei Geräten mit verfügbarem Update setzen."
     }
   ],
   "status": []

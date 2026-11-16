@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 3 (16.11.2026)
+
+#### Neu
+- Übersicht mit Spalte „Auswahl“: Haken bei den Geräten setzen, die aktualisiert werden sollen, dann „Ausgewählte aktualisieren“. Haken gibt es nur bei Geräten mit verfügbarem Update.
+- `SFW_UpdateSelected($id, $Hosts)` für Skripte.
+
+#### Geändert
+- Knopf „Markiertes Gerät aktualisieren“ entfällt (ersetzt durch die Auswahl mit Haken).
+
 ### Build 2 (16.11.2026)
 
 #### Geändert
@@ -11,6 +20,7 @@
 
 #### Behoben
 - Nach jeder Abfrage erschien „Die Instanz hat noch ungespeicherte Änderungen“, obwohl nichts geändert wurde.
+- „Markiertes Gerät aktualisieren“ brach mit „Undefined variable $Devices“ ab: Knöpfe können nur auf Listen im selben Formularbereich zugreifen – die Übersicht liegt jetzt bei den Knöpfen.
 - Überblickszeile zeigte vor der ersten Abfrage „alle aktuell“; Geräte mit Fehler (z. B. Passwort falsch) werden jetzt mitgezählt.
 
 ### Build 1 (16.11.2026)
