@@ -150,7 +150,6 @@
             "Automatisches Firmware-Update (stabile Version) in den ausgewählten Geräten einschalten? Die Geräte prüfen dann täglich um 0 Uhr selbst und starten bei einem Update neu.": "Switch on automatic firmware updates (stable version) in the selected devices? The devices will then check by themselves every day at midnight and restart when updating.",
             "Test-Nachricht senden": "Send test message",
             "Auswahl": "Select",
-            "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts.": "Tick the \"Select\" column, then press the matching button above. A click on the IP address opens the web interface of the device.",
             "Update-Verlauf": "Update history",
             "Zeitpunkt": "Time",
             "Von": "From",
@@ -161,18 +160,20 @@
             "%d Batteriegeräte schlafen – ihre Updates sind vorgemerkt und starten beim nächsten Aufwachen.": "%d battery devices are sleeping – their updates are scheduled and start when they next wake up.",
             "%s: Batteriegerät schläft – Update auf %s ist vorgemerkt und startet beim nächsten Aufwachen.": "%s: battery device is sleeping – update to %s is scheduled and starts when it next wakes up.",
             "Bestätigung beim nächsten Aufwachen": "confirmation when it next wakes up",
-            "Update auf %s vorgemerkt – startet beim nächsten Aufwachen": "Update to %s scheduled – starts when the device next wakes up",
             "Schläft – Update auf %s verfügbar (zuletzt wach %s)": "Sleeping – update to %s available (last awake %s)",
             "Wach-Signal (Batterie)": "Wake signal (battery)",
             "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Haken bei „Batterie“: Das Gerät schläft meist und wird dann als „Schläft“ statt als Fehler gezeigt. Wach-Signal (nur Batteriegeräte): eine Variable, die beim Aufwachen des Geräts neu geschrieben wird, z. B. die Temperatur aus dem Shelly-Modul – dann fragt das Modul das Gerät sofort ab und startet ein vorgemerktes Update. Ob ein Passwort stimmt, zeigt die Übersicht unten nach „Änderungen übernehmen“.": "Add by hand: press \"Add\" and enter the IP address. With a tick at \"Own PW\" the password of the row is used instead of the master password. Tick at \"Battery\": the device is mostly asleep and is then shown as \"Sleeping\" instead of as an error. Wake signal (battery devices only): a variable that is written whenever the device wakes up, e.g. the temperature from the Shelly module – the module then queries the device right away and starts a scheduled update. Whether a password is correct is shown in the overview below after \"Apply changes\".",
             "%s: Update ist schon vorgemerkt und startet beim nächsten Aufwachen.": "%s: update is already scheduled and starts when the device next wakes up.",
             "%s: Batteriegerät schläft – beim nächsten Aufwachen wird nach einem Update gesehen und es gleich gestartet.": "%s: battery device is sleeping – when it next wakes up, the module looks for an update and starts it right away.",
             "%s: Batteriegerät ist wach – kein Update verfügbar, Vormerkung erledigt": "%s: battery device is awake – no update available, scheduled update cleared",
-            "Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten": "Scheduled – look for an update and start it when the device next wakes up",
             "%s: Batteriegerät ist wach – vorgemerktes Update gestartet": "%s: battery device is awake – scheduled update started",
             "neueste Version": "latest version",
             "Kein Update gemeldet (Batteriegerät – Angabe unsicher)": "No update reported (battery device – not reliable)",
-            "schläft (zuletzt wach %s)": "sleeping (last awake %s)"
+            "schläft (zuletzt wach %s)": "sleeping (last awake %s)",
+            "Vormerkung aufgehoben: %s": "Scheduled update cancelled: %s",
+            "Update auf %s vorgemerkt – startet beim nächsten Aufwachen (Haken heraus = abbrechen)": "Update to %s scheduled – starts when the device next wakes up (untick = cancel)",
+            "Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten (Haken heraus = abbrechen)": "Scheduled – look for an update and start it when the device next wakes up (untick = cancel)",
+            "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts.": "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device."
         }
     }
 }

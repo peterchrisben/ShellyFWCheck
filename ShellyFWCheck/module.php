@@ -215,9 +215,7 @@ class ShellyFWCheck extends IPSModule
                 $this->UpdateAll();
                 break;
             case 'Select':
-                // Haken in der Übersicht merken, damit sie eine Auffrischung der Liste überstehen
-                $hosts = json_decode((string) $Value, true);
-                $this->SetBuffer('Selected', json_encode(is_array($hosts) ? array_values(array_map([$this, 'HostKey'], array_map('strval', $hosts))) : []));
+                $this->SelectRows((string) $Value);
                 break;
             case 'UpdateDevice':
                 $this->UpdateDevice((string) $Value);
@@ -338,6 +336,7 @@ class ShellyFWCheck extends IPSModule
                     $e['ver'] = (string) ($data['fw'] ?? '');
                     $e['gen'] = 1;
                     $e['err'] = 'gen1';
+                    $e['pending'] = false;   // Gen1 wird nicht unterstützt – Vormerkung verwerfen
                     $state[$k] = $e;
                     continue;
                 }
@@ -702,7 +701,8 @@ class ShellyFWCheck extends IPSModule
             return false;
         }
         if ($e['battery'] && $e['err'] === 'sleep') {
-            return $e['avail'] !== '' || ($picked && $e['gen'] >= 2);
+            // ausdrücklich ausgewählt: auch wenn noch kein Update bekannt ist oder das Gerät noch nie wach war
+            return $e['avail'] !== '' || $picked;
         }
         return $e['avail'] !== '' && $e['online'] && $e['err'] === '';
     }
@@ -1108,7 +1108,7 @@ class ShellyFWCheck extends IPSModule
             $e['pending'] = true;
             $state[$k] = $e;
             $this->WriteState($state);
-            $message = $this->T('%s: Batteriegerät schläft – beim nächsten Aufwachen wird nach einem Update gesehen und es gleich gestartet.', $e['name']);
+            $message = $this->T('%s: Batteriegerät schläft – beim nächsten Aufwachen wird nach einem Update gesehen und es gleich gestartet.', $e['name'] !== '' ? $e['name'] : $row['Host']);
             $this->LogMessage($message, KL_NOTIFY);
             return true;
         }
@@ -1575,8 +1575,8 @@ class ShellyFWCheck extends IPSModule
             return $this->T('Update auf %s läuft …', $e['upd_target'] !== '' ? $e['upd_target'] : $this->T('neueste Version')) . ' (' . implode(', ', $parts) . ')';
         }
         if ($e['pending']) {
-            return $e['avail'] !== '' ? $this->T('Update auf %s vorgemerkt – startet beim nächsten Aufwachen', $e['avail'])
-                : $this->T('Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten');
+            return $e['avail'] !== '' ? $this->T('Update auf %s vorgemerkt – startet beim nächsten Aufwachen (Haken heraus = abbrechen)', $e['avail'])
+                : $this->T('Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten (Haken heraus = abbrechen)');
         }
         if ($e['err'] === 'sleep' && $e['avail'] === '' && $this->NoteIsDone($e['note'])) {
             return $this->NoteText($e['note']) . ' – ' . $this->T('schläft (zuletzt wach %s)', date('d.m. H:i', $e['seen']));
@@ -1657,6 +1657,38 @@ class ShellyFWCheck extends IPSModule
     }
 
     /** Zeilen der Übersicht (reine Anzeige, gehört nicht zu den Einstellungen). */
+    /**
+     * Haken der Übersicht. Vorgemerkte Batteriegeräte stehen mit Haken da: Haken heraus = Vormerkung sofort aufheben.
+     * Alle anderen Haken werden nur gemerkt (für die Knöpfe), damit sie eine Auffrischung der Liste überstehen.
+     */
+    private function SelectRows(string $value): void
+    {
+        $hosts = json_decode($value, true);
+        $ticked = is_array($hosts) ? array_values(array_map([$this, 'HostKey'], array_map('strval', $hosts))) : [];
+        $state = $this->ReadState();
+        $cancelled = [];
+        foreach ($this->ActiveRows() as $row) {
+            $k = $this->HostKey($row['Host']);
+            if (!isset($state[$k]) || !$state[$k]['pending']) {
+                continue;
+            }
+            if (in_array($k, $ticked, true)) {
+                $ticked = array_values(array_diff($ticked, [$k]));   // bleibt vorgemerkt, zählt nicht als Auswahl für die Knöpfe
+            } else {
+                $state[$k]['pending'] = false;
+                $cancelled[] = $state[$k]['name'] !== '' ? $state[$k]['name'] : $row['Host'];
+            }
+        }
+        $this->SetBuffer('Selected', json_encode($ticked));
+        if (count($cancelled) > 0) {
+            $this->WriteState($state);
+            $text = $this->T('Vormerkung aufgehoben: %s', implode(', ', $cancelled));
+            $this->LogMessage($text, KL_NOTIFY);
+            $this->ShowResult($text);
+            $this->RefreshForm();
+        }
+    }
+
     private function StatusRows(array $rows): array
     {
         $state = $this->ReadState();
@@ -1671,10 +1703,12 @@ class ShellyFWCheck extends IPSModule
             $k = $this->HostKey($row['Host']);
             $e = $state[$k] ?? $this->EmptyEntry();
             // Haken bei erreichbaren Geräten – und bei schlafenden Batteriegeräten (Update wird dann vorgemerkt)
-            $can = (($e['online'] && $e['err'] === '') || ($row['Battery'] && $e['err'] === 'sleep')) && $e['gen'] >= 2 && !$e['pending'];
+            // schlafende Batteriegeräte auch, wenn sie noch nie wach waren: Erkennen, Prüfen und Update laufen dann beim ersten Aufwachen
+            $can = (($e['online'] && $e['err'] === '' && $e['gen'] >= 2) || ($row['Battery'] && $e['err'] === 'sleep')) && !$e['pending'];
             $list[] = [
-                'Select'    => $can && in_array($k, $selected, true),
-                'editable'  => $can,
+                // vorgemerkt: Haken gesetzt – herausnehmen hebt die Vormerkung auf
+                'Select'    => $e['pending'] || ($can && in_array($k, $selected, true)),
+                'editable'  => $can || ($e['pending'] && $e['upd_start'] === 0),
                 'Name'      => $e['name'],
                 'Host'      => $row['Host'],
                 'Model'     => $e['model'],

@@ -4,7 +4,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 17)
+Aktuelle Version: 1.0 (Build 18)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -34,7 +34,7 @@ Solange kein Gerät eingetragen ist, zeigt Symcon „Instanz ist inaktiv“ – 
 
 **Wach-Signal:** Damit das Modul den richtigen Moment erwischt, in der Spalte „Wach-Signal“ eine Variable auswählen, die beim Aufwachen des Geräts neu geschrieben wird – z. B. die Temperatur aus dem Shelly-Modul (MQTT). Wird sie aktualisiert, fragt das Modul sofort nur dieses Gerät ab.
 
-**Update für ein schlafendes Gerät:** Haken setzen und „Ausgewählte aktualisieren“ (oder „Alle Updates starten“). Das Update wird **vorgemerkt** und startet beim nächsten Aufwachen von selbst – auch wenn das Modul noch gar nicht weiß, ob es ein Update gibt: Beim Aufwachen fragt es nach und startet ein vorhandenes Update sofort (bei „Alle Updates starten“ nur Geräte mit bekanntem Update); bestätigt wird es beim Aufwachen danach. Ohne Wach-Signal klappt das nur, wenn das Gerät zufällig bei einer Prüfung wach ist. Wer den Haken „Batterie“ wieder herausnimmt, verwirft die Vormerkung.
+**Update für ein schlafendes Gerät:** Haken setzen und „Ausgewählte aktualisieren“ (oder „Alle Updates starten“). Das Update wird **vorgemerkt** und startet beim nächsten Aufwachen von selbst – auch wenn das Modul noch gar nicht weiß, ob es ein Update gibt: Beim Aufwachen fragt es nach und startet ein vorhandenes Update sofort – das geht auch bei einem gerade von Hand eingetragenen Gerät, das noch nie wach war (bei „Alle Updates starten“ nur Geräte mit bekanntem Update); bestätigt wird es beim Aufwachen danach. Ohne Wach-Signal klappt das nur, wenn das Gerät zufällig bei einer Prüfung wach ist. Vorgemerkte Geräte stehen blau mit gesetztem Haken in der Übersicht. **Abbrechen:** den Haken herausnehmen – die Vormerkung ist sofort aufgehoben, „Änderungen übernehmen“ ist dafür nicht nötig. Auch wer den Haken „Batterie“ in der Geräteliste herausnimmt, verwirft die Vormerkung.
 
 Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zeile den Haken **Eigenes PW** setzen und das Passwort dort eintragen. Der Benutzername ist bei Shelly immer „admin“.
 

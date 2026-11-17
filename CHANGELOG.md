@@ -2,6 +2,12 @@
 
 ## Version 1.0
 
+### Build 18 (17.11.2026)
+
+#### Geändert
+- Ein Batteriegerät, das noch nie wach war (z. B. gerade von Hand eingetragen), lässt sich in der Übersicht auswählen und vormerken. Beim ersten Aufwachen erkennt das Modul das Gerät, fragt nach einem Update und startet es gleich. Stellt sich ein Gen1-Gerät heraus, wird die Vormerkung verworfen.
+- Vorgemerkte Batteriegeräte behalten in der Übersicht ihren Haken (blau). Haken herausnehmen hebt die Vormerkung sofort auf – ohne „Änderungen übernehmen“. Status-Text und Hinweis unter der Übersicht sagen das.
+
 ### Build 17 (16.11.2026)
 
 #### Geändert
