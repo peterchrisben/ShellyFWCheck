@@ -749,15 +749,15 @@ class ShellyFWCheck extends IPSModule
                 . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
             return 0;
         }
-        // Funde aus den Adressbereichen dazunehmen; Schlüssel ist die Geräte-ID, dadurch zählt kein Gerät doppelt
-        $found = [];
-        foreach (($mdns ?? []) as $name => $ip) {
-            $found[strtolower((string) $name)] = [$name, $ip];
+        // Jede Adresse direkt fragen: Die Netzwerksuche (mDNS) liefert auch veraltete Einträge, mehrere Namen
+        // oder Adressen für ein Gerät (z. B. LAN und WLAN). Gezählt wird jedes Gerät einmal – nach seiner ID.
+        $ips = array_keys($mdns ?? []);
+        foreach ($ranges as [$first, $last]) {
+            for ($n = $first; $n <= $last; $n++) {
+                $ips[] = long2ip($n);
+            }
         }
-        foreach ($this->ScanAddresses($ranges) as $name => $ip) {
-            $found[strtolower((string) $name)] = $found[strtolower((string) $name)] ?? [$name, $ip];
-        }
-        $found = array_column($found, 1, 0);
+        $devices = $this->ProbeAddresses(array_values(array_unique($ips)), $gen1);
         $rows = $this->DeviceRows();
         $state = $this->ReadState();
         $byHost = [];
@@ -773,12 +773,15 @@ class ShellyFWCheck extends IPSModule
         $list = $this->ConfigRows($rows);
         $new = 0;
         $moved = 0;
-        foreach ($found as $name => $ip) {
-            $k = $this->HostKey($ip);
-            if (isset($byHost[$k])) {
-                continue;
+        foreach ($devices as $id => $dev) {
+            $known = false;
+            foreach ($dev['ips'] as $ip) {
+                $known = $known || isset($byHost[$this->HostKey($ip)]);
             }
-            $id = strtolower($name);
+            if ($known) {
+                continue;   // steht schon in der Liste (unter einer seiner Adressen)
+            }
+            $ip = $dev['ips'][0];
             if (isset($byId[$id])) {
                 // bekanntes Gerät mit neuer IP-Adresse
                 $list[$byId[$id]]['Host'] = $ip;
@@ -786,17 +789,24 @@ class ShellyFWCheck extends IPSModule
                 $moved++;
                 continue;
             }
-            $byHost[$k] = count($list);
-            $list[] = ['Active' => true, 'Name' => $name, 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'Battery' => false, 'WakeVar' => 0, 'rowColor' => '#C0C0FF'];
+            $byHost[$this->HostKey($ip)] = count($list);
+            $list[] = ['Active' => true, 'Name' => $dev['name'], 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'Battery' => false, 'WakeVar' => 0, 'rowColor' => '#C0C0FF'];
             $new++;
         }
         if ($new + $moved > 0) {
             $this->UpdateFormField('Devices', 'values', json_encode($list));
             $this->UpdateFormField('PanelDevices', 'expanded', true);
-            $text = $this->T('%d Shelly(s) im Netzwerk gefunden: %d neu', count($found), $new) . ($moved > 0 ? ', ' . $this->T('%d mit neuer IP-Adresse', $moved) : '')
+            $text = $this->T('%d Shelly(s) im Netzwerk gefunden: %d neu', count($devices), $new) . ($moved > 0 ? ', ' . $this->T('%d mit neuer IP-Adresse', $moved) : '')
                 . ' – ' . $this->T('oben unter „Geräte verwalten“ blau markiert. Jetzt „Änderungen übernehmen“ drücken.');
         } else {
-            $text = $this->T('%d Shelly(s) im Netzwerk gefunden – alle stehen schon in der Liste.', count($found));
+            $text = $this->T('%d Shelly(s) im Netzwerk gefunden – alle stehen schon in der Liste.', count($devices));
+        }
+        if ($gen1 > 0) {
+            $text .= ' ' . $this->T('%d Gen1-Gerät(e) ausgelassen.', $gen1);
+        }
+        if (count($ranges) === 0) {
+            // Netzwerksuche findet nicht immer alle (Schlafende, Geräte mit abgeschalteter Suche, Cache von Symcon)
+            $text .= ' ' . $this->T('Fehlt ein Gerät? Unter „Geräte verwalten“ das eigene Netz als Adressbereich eintragen – dann wird jede Adresse direkt gefragt.');
         }
         $this->ShowResult($text . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
         return $new;
@@ -859,28 +869,41 @@ class ShellyFWCheck extends IPSModule
      * Jede Adresse der Bereiche kurz nach /shelly fragen; Antwort eines Shelly ab Gen2 = Fund.
      * @return array<string,string> Geräte-ID => IP-Adresse
      */
-    private function ScanAddresses(array $ranges): array
+    /**
+     * Adressen direkt nach /shelly fragen (je 128 gleichzeitig). Ergebnis: Shellys ab Gen2 nach Geräte-ID,
+     * mit allen Adressen, unter denen sie geantwortet haben. $gen1 = Anzahl gefundener Gen1-Geräte.
+     * @return array<string,array{name:string,ips:array<int,string>}>
+     */
+    private function ProbeAddresses(array $ips, ?int &$gen1): array
     {
-        $ips = [];
-        foreach ($ranges as [$first, $last]) {
-            for ($n = $first; $n <= $last; $n++) {
-                $ips[long2ip($n)] = true;
-            }
-        }
+        $gen1 = 0;
         $found = [];
-        foreach (array_chunk(array_keys($ips), 128) as $chunk) {
+        $silent = 0;
+        foreach (array_chunk($ips, 128) as $chunk) {
             $requests = [];
             foreach ($chunk as $ip) {
                 $requests[$ip] = ['url' => 'http://' . $ip . '/shelly', 'timeout' => 3, 'connect_ms' => 1500, 'quiet' => true];
             }
             foreach ($this->HttpBatch($requests) as $ip => $res) {
                 $data = $res['code'] === 200 ? $this->DecodeJson($res['body']) : null;
-                if (is_array($data) && (int) ($data['gen'] ?? 0) >= 2 && (string) ($data['id'] ?? '') !== '') {
-                    $found[(string) $data['id']] = (string) $ip;
+                if (!is_array($data)) {
+                    $silent++;
+                    continue;
                 }
+                $id = strtolower((string) ($data['id'] ?? ''));
+                if (!isset($data['gen']) || (int) $data['gen'] < 2) {
+                    $gen1 += isset($data['type']) || isset($data['mac']) ? 1 : 0;
+                    continue;
+                }
+                if ($id === '') {
+                    continue;
+                }
+                $found[$id] = $found[$id] ?? ['name' => (string) (($data['name'] ?? '') ?: $data['id']), 'ips' => []];
+                $found[$id]['ips'][] = (string) $ip;
             }
         }
-        $this->SendDebug('Suche in Adressbereichen', count($ips) . ' Adressen, Funde: ' . json_encode($found), 0);
+        $this->SendDebug('Suche', count($ips) . ' Adressen gefragt, ' . count($found) . ' Shellys (Gen2+), ' . $gen1 . ' Gen1, '
+            . $silent . ' ohne Antwort: ' . json_encode($found), 0);
         return $found;
     }
 
@@ -1245,6 +1268,10 @@ class ShellyFWCheck extends IPSModule
     // ------------------------------------------------------------------- mDNS
 
     /** @return array<string,string>|null Name => IPv4, null = DNS-SD nicht vorhanden */
+    /**
+     * Adressen aus der Netzwerksuche (DNS-SD/mDNS) von Symcon: Dienst _shelly._tcp und _http._tcp (Namen „shelly…“),
+     * alle IPv4-Adressen. null = keine DNS-SD-Instanz. Ergebnis: Adresse => Name aus der Suche.
+     */
     protected function QueryMdns(): ?array
     {
         $ids = IPS_GetInstanceListByModuleID(self::DNSSD_GUID);
@@ -1253,6 +1280,7 @@ class ShellyFWCheck extends IPSModule
         }
         $dns = $ids[0];
         $found = [];
+        $names = 0;
         foreach (['_shelly._tcp' => false, '_http._tcp' => true] as $type => $filter) {
             $services = @ZC_QueryServiceType($dns, $type, '');
             if (!is_array($services)) {
@@ -1260,21 +1288,21 @@ class ShellyFWCheck extends IPSModule
             }
             foreach ($services as $service) {
                 $name = (string) ($service['Name'] ?? '');
-                if ($name === '' || ($filter && stripos($name, 'shelly') !== 0) || isset($found[$name])) {
+                if ($name === '' || ($filter && stripos($name, 'shelly') !== 0)) {
                     continue;
                 }
+                $names++;
                 $details = @ZC_QueryService($dns, $name, (string) ($service['Type'] ?? $type), (string) ($service['Domain'] ?? 'local.'));
-                $ip = (string) ($details[0]['IPv4'][0] ?? '');
-                if ($ip !== '') {
-                    $found[$name] = $ip;
+                foreach (is_array($details) ? $details : [] as $d) {
+                    foreach ((array) ($d['IPv4'] ?? []) as $ip) {
+                        if ((string) $ip !== '') {
+                            $found[(string) $ip] = $found[(string) $ip] ?? $name;
+                        }
+                    }
                 }
             }
-            if (count($found) > 0) {
-                break;  // _http._tcp nur als Ersatz, wenn _shelly._tcp nichts liefert
-            }
         }
-        $this->SendDebug('mDNS', json_encode($found), 0);
-        ksort($found);
+        $this->SendDebug('mDNS', $names . ' Einträge, ' . count($found) . ' Adressen: ' . json_encode($found), 0);
         return $found;
     }
 

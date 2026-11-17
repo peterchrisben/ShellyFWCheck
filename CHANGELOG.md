@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 21 (17.11.2026)
+
+#### Behoben
+- Gerätesuche zählte Einträge der Netzwerksuche statt Geräte: veraltete Einträge, mehrere Namen oder Adressen eines Geräts ergaben z. B. „34 gefunden“ bei 22 Shellys. Jetzt wird jede gefundene Adresse direkt gefragt und jedes Gerät nach seiner ID einmal gezählt; Gen1-Geräte werden genannt.
+- Die Suche fragte den Dienst `_http._tcp` nur, wenn `_shelly._tcp` gar nichts lieferte, und nahm je Eintrag nur die erste Adresse – Geräte, die sich nur dort melden, fehlten. Jetzt werden beide Dienste und alle IPv4-Adressen genutzt.
+
+#### Geändert
+- Fehlt nach der Suche ein Gerät, nennt die Ergebniszeile den Weg: das eigene Netz als Adressbereich eintragen – dann wird jede Adresse direkt gefragt. Beschriftung „Adressbereiche durchsuchen“ und README entsprechend. (Rückmeldung aus dem Forum, danke!)
+
 ### Build 20 (17.11.2026)
 
 #### Behoben

@@ -126,11 +126,9 @@
             "IP-Adresse": "IP address",
             "Eigenes PW": "Own PW",
             "Batterie": "Battery",
-            "Weitere Netze durchsuchen (zusätzlich zum eigenen Netz)": "Search further networks (in addition to the own network)",
             "Von (erste IP-Adresse)": "From (first IP address)",
             "Bis (letzte IP-Adresse)": "To (last IP address)",
             "Bezeichnung": "Label",
-            "Nur nötig für Shellys in einem anderen Netz als Symcon (z. B. Gäste- oder IoT-Netz). Beispiel: Von 192.168.20.1, Bis 192.168.20.254. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht. Höchstens 1024 Adressen je Zeile. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.": "Only needed for Shellys in a different network than Symcon (e.g. guest or IoT network). Example: From 192.168.20.1, To 192.168.20.254. If \"To\" is left empty, the whole network of the address is searched. At most 1024 addresses per row. Searching only happens with the button \"Search devices on the network\".",
             "Prüfung, Nachricht und Anzeige": "Check, notification and display",
             "Automatisch prüfen alle (Stunden, 0 = aus)": "Check automatically every (hours, 0 = off)",
             "Push-Nachricht bei neuem Update an diese Kachel-Visualisierung (leer = keine Nachricht)": "Push message for a new update to this tile visualization (empty = no message)",
@@ -173,7 +171,11 @@
             "Vormerkung aufgehoben: %s": "Scheduled update cancelled: %s",
             "Update auf %s vorgemerkt – startet beim nächsten Aufwachen (Haken heraus = abbrechen)": "Update to %s scheduled – starts when the device next wakes up (untick = cancel)",
             "Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten (Haken heraus = abbrechen)": "Scheduled – look for an update and start it when the device next wakes up (untick = cancel)",
-            "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts.": "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device."
+            "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts.": "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device.",
+            "Adressbereiche durchsuchen (andere Netze – oder das eigene, falls die Suche nicht alle findet)": "Search address ranges (other networks – or your own, if the search does not find all devices)",
+            "Für Shellys in einem anderen Netz als Symcon (z. B. Gäste- oder IoT-Netz) – oder für das eigene Netz, wenn die normale Suche nicht alle Geräte findet: Dann wird jede Adresse direkt gefragt. Beispiel: Von 192.168.20.1, Bis 192.168.20.254. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht. Höchstens 1024 Adressen je Zeile. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.": "For Shellys in a different network than Symcon (e.g. guest or IoT network) – or for your own network if the normal search does not find all devices: then every address is asked directly. Example: From 192.168.20.1, To 192.168.20.254. If \"To\" is left empty, the whole network of the address is searched. At most 1024 addresses per row. Searching only happens with the button \"Search devices on the network\".",
+            "%d Gen1-Gerät(e) ausgelassen.": "%d Gen1 device(s) skipped.",
+            "Fehlt ein Gerät? Unter „Geräte verwalten“ das eigene Netz als Adressbereich eintragen – dann wird jede Adresse direkt gefragt.": "A device is missing? Enter your own network as an address range under \"Manage devices\" – then every address is asked directly."
         }
     }
 }

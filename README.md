@@ -4,7 +4,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 20)
+Aktuelle Version: 1.0 (Build 21)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -28,7 +28,9 @@ Aktuelle Version: 1.0 (Build 20)
 
 Solange kein Gerät eingetragen ist, zeigt Symcon „Instanz ist inaktiv“ – das ist normal.
 
-**Shellys in einem anderen Netz** (Gäste-, IoT-Netz, Gartenhaus): Die normale Suche findet nur Geräte im Netz von Symcon. Unter „Geräte verwalten“ lassen sich bei „Weitere Netze durchsuchen“ zusätzliche Adressbereiche eintragen, z. B. Von `192.168.20.1`, Bis `192.168.20.254`. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht; auch die Kurzform `192.168.20.0/24` geht. Höchstens 1024 Adressen je Zeile. Symcon muss das andere Netz erreichen können. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.
+**Findet die Suche nicht alle Geräte?** Die Netzwerksuche (mDNS) ist nicht immer vollständig – z. B. bei Geräten, die sich nicht melden, oder wenn Symcon alte Einträge zwischenspeichert. Dann unter „Geräte verwalten“ bei „Adressbereiche durchsuchen“ das **eigene Netz** eintragen (z. B. Von `192.168.1.1`, Bis `254`). Das Modul fragt dann jede Adresse direkt und findet so jeden Shelly ab Gen2.
+
+**Shellys in einem anderen Netz** (Gäste-, IoT-Netz, Gartenhaus): Die normale Suche findet nur Geräte im Netz von Symcon. Unter „Geräte verwalten“ lassen sich bei „Adressbereiche durchsuchen“ zusätzliche Adressbereiche eintragen, z. B. Von `192.168.20.1`, Bis `192.168.20.254`. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht; auch die Kurzform `192.168.20.0/24` geht. Höchstens 1024 Adressen je Zeile. Symcon muss das andere Netz erreichen können. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.
 
 **Batteriegeräte** (z. B. Shelly H&T): Haken „Batterie“ in der Geräteliste setzen. Das Gerät wird dann als „Schläft“ gezeigt statt als Fehler und zählt nicht bei „Nicht erreichbar“ mit. Batteriegeräte sind nur rund zwei Sekunden wach. In dieser Zeit fragt das Modul sie nach einem Update (der H&T antwortet in unter einer Sekunde). Solange ein Gerät schläft, wird ein Update auch aus Geräten gleichen Modells abgeleitet: Läuft auf einem anderen H&T schon eine neuere Version, wird sie als verfügbar angezeigt.
 

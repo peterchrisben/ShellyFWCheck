@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 20)
+Current version: 1.0 (Build 21)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 
@@ -28,7 +28,9 @@ Current version: 1.0 (Build 20)
 
 As long as no device is entered, Symcon shows "Instance is inactive" – that is normal.
 
-**Shellys in a different network** (guest or IoT network, garden shed): the normal search only finds devices in the network of Symcon. Under "Manage devices" you can enter additional address ranges at "Search further networks", e.g. From `192.168.20.1`, To `192.168.20.254`. If "To" is left empty, the whole network of the address is searched; the short form `192.168.20.0/24` works as well. At most 1024 addresses per row. Symcon must be able to reach the other network. Searching only happens with the button "Search devices on the network".
+**The search does not find all devices?** The network search (mDNS) is not always complete – e.g. for devices that do not announce themselves, or when Symcon caches old entries. Then enter your **own network** under "Manage devices" at "Search address ranges" (e.g. From `192.168.1.1`, To `254`). The module then asks every address directly and finds every Shelly of Gen2 and newer.
+
+**Shellys in a different network** (guest or IoT network, garden shed): the normal search only finds devices in the network of Symcon. Under "Manage devices" you can enter additional address ranges at "Search address ranges", e.g. From `192.168.20.1`, To `192.168.20.254`. If "To" is left empty, the whole network of the address is searched; the short form `192.168.20.0/24` works as well. At most 1024 addresses per row. Symcon must be able to reach the other network. Searching only happens with the button "Search devices on the network".
 
 **Battery devices** (e.g. Shelly H&T): tick "Battery" in the device list. The device is then shown as "Sleeping" instead of as an error and is not counted under "Not reachable". Battery devices are only awake for about two seconds. In that time the module asks them for an update (the H&T answers in less than a second). While a device is asleep, an update is also derived from devices of the same model: if another H&T already runs a newer version, it is shown as available.
 
