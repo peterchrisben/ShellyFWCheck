@@ -4,7 +4,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 21)
+Aktuelle Version: 1.0 (Build 22)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -59,7 +59,7 @@ Die Spalte **Auto-Update** zeigt, ob im Gerät selbst das automatische Update ei
 
 Umstellen: Haken bei den Geräten setzen und in der Zeile „Auto-Update im Gerät für die Ausgewählten“ **Aus** oder **Stable (täglich 0 Uhr)** drücken. Das Modul entfernt dabei alle bisherigen Update-Zeitpläne des Geräts (auch abgeschaltete Reste) und legt bei „Stable“ genau einen neuen an, im selben Aufbau wie die Shelly-Weboberfläche. Andere Zeitpläne (z. B. Schaltzeiten) bleiben unberührt. Beta lässt sich nur per Skript einschalten.
 
-**Folge-Updates:** Bietet ein Gerät direkt nach einem Update schon das nächste an (z. B. 2.0.0 → 2.0.3 → 2.2.0), macht das Modul von selbst weiter, bis die neueste Version installiert ist (höchstens fünf Folge-Updates). Abschaltbar unter „Updates“.
+**Folge-Updates:** Bietet ein Gerät nach einem über das Modul gestarteten Update gleich das nächste an (z. B. 2.0.0 → 2.0.3 → 2.2.0), macht das Modul von selbst weiter, bis die neueste Version installiert ist (höchstens fünf Folge-Updates). Manche Geräte bieten das nächste Update erst einige Minuten nach dem Neustart an – das Modul sieht deshalb nach jedem Update noch 15 Minuten lang jede Minute nach. Abschaltbar unter „Updates“. Updates, die noch gar nicht gestartet wurden („Update verfügbar“), startet das Modul nie von selbst – dafür „Ausgewählte aktualisieren“ oder „Alle Updates starten“.
 
 **Push-Nachricht:** Unter „Prüfung, Nachricht und Anzeige“ lässt sich eine Kachel-Visualisierung auswählen. Findet eine Prüfung ein neues Update, bekommt sie eine Nachricht („Update verfügbar: Name (Version)“), je Update nur einmal. Ohne Auswahl gibt es keine Nachricht. Mit „Test-Nachricht senden“ lässt sich das ausprobieren.
 

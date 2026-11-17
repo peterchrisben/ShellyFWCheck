@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 21)
+Current version: 1.0 (Build 22)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 
@@ -59,7 +59,7 @@ The column **Auto update** shows whether automatic updating is switched on in th
 
 To change it: tick the devices and press **Off** or **Stable (daily at midnight)** in the row "Auto update in the device for the selected ones". The module removes all existing update schedules of the device (including disabled leftovers) and, for "Stable", creates exactly one new schedule with the same structure the Shelly web interface uses. Other schedules (e.g. switching times) are not touched. Beta can only be switched on by script.
 
-**Follow-up updates:** if a device offers the next update right after an update (e.g. 2.0.0 → 2.0.3 → 2.2.0), the module continues by itself until the latest version is installed (at most five follow-up updates). Can be switched off under "Updates".
+**Follow-up updates:** if a device offers the next update after an update started by the module (e.g. 2.0.0 → 2.0.3 → 2.2.0), the module continues by itself until the latest version is installed (at most five follow-up updates). Some devices only offer the next update a few minutes after restarting – so after every update the module keeps looking every minute for 15 minutes. Can be switched off under "Updates". Updates that have not been started at all ("Update available") are never started by the module on its own – use "Update selected" or "Start all updates".
 
 **Push message:** under "Check, notification and display" you can select a tile visualization. When a check finds a new update, it receives a message ("Update available: name (version)"), only once per update. Without a selection there is no message. "Send test message" lets you try it out.
 

@@ -18,6 +18,7 @@ class ShellyFWCheck extends IPSModule
     private const MAX_CHAIN = 5;            // höchstens so viele Folge-Updates hintereinander
     private const SCAN_MAX = 1024;          // höchstens so viele Adressen je Suchbereich
     private const HISTORY_MAX = 50;         // so viele Einträge behält der Update-Verlauf
+    private const CHAIN_WINDOW = 900;          // so lange nach einem Update auf ein Folge-Update warten (Sekunden)
     private const BATTERY_VERIFY_MAX = 86400; // Batteriegeräte: so lange wird auf die Bestätigung beim Aufwachen gewartet
 
     public function Create()
@@ -385,6 +386,9 @@ class ShellyFWCheck extends IPSModule
                         $e['upd_start'] = 0;
                         $e['avail'] = '';
                         $e['note'] = 'done|' . $e['upd_from'];
+                        // Manche Geräte bieten das nächste Update erst einige Minuten nach dem Neustart an
+                        // (Shelly 2.2.0/2.2.1) – so lange weiter nachsehen und dann das Folge-Update starten.
+                        $e['chain_until'] = $this->ReadPropertyBoolean('ContinueUpdates') ? $now + self::CHAIN_WINDOW : 0;
                         $justDone[$k] = $row;
                     } elseif ($e['slot'] >= 0 && $e['upd_slot'] >= 0 && $e['slot'] !== $e['upd_slot'] && $e['upd_tries'] < self::MAX_STEPS) {
                         // Gerät hat neu gestartet (anderer Speicherplatz), meldet aber die alte Version:
@@ -537,8 +541,12 @@ class ShellyFWCheck extends IPSModule
             // (z. B. 2.0.0 → 2.0.3 → 2.2.0). Auf Wunsch gleich weiter bis zur neuesten Version.
             if ($this->ReadPropertyBoolean('ContinueUpdates')) {
                 $next = [];
-                foreach ($justDone as $k => $row) {
-                    $e = $state[$k];
+                foreach ($rows as $row) {
+                    $k = $this->HostKey($row['Host']);
+                    $e = $state[$k] ?? null;
+                    if ($e === null || (!isset($justDone[$k]) && $e['chain_until'] < $now) || $e['upd_start'] > 0) {
+                        continue;
+                    }
                     if ($e['err'] === '' && $e['avail'] !== '' && $e['upd_chain'] < self::MAX_CHAIN) {
                         $next[$k] = ['host' => $row['Host'], 'method' => 'Shelly.Update', 'params' => ['stage' => 'stable'],
                             'timeout' => 20, 'password' => $this->PasswordFor($row), 'auth' => $e['auth']];
@@ -1261,6 +1269,9 @@ class ShellyFWCheck extends IPSModule
             if ($e['upd_start'] > 0 && (!$e['battery'] || time() - $e['upd_start'] <= self::VERIFY_MAX)) {
                 return true;
             }
+            if (!$e['battery'] && $e['chain_until'] >= time()) {
+                return true;   // Folge-Update-Fenster: weiter jede Minute nachsehen
+            }
         }
         return false;
     }
@@ -1560,7 +1571,7 @@ class ShellyFWCheck extends IPSModule
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
             'auto' => '', 'auto_spec' => '', 'auto_jobs' => [],
             'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0,
-            'upd_chain' => 0, 'battery' => false, 'pending' => false, 'sure' => false];
+            'upd_chain' => 0, 'battery' => false, 'pending' => false, 'sure' => false, 'chain_until' => 0];
     }
 
     private function ReadState(): array

@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 22 (17.11.2026)
+
+#### Behoben
+- Folge-Updates: Bot ein Gerät das nächste Update erst einige Minuten nach dem Neustart an (z. B. bei Shelly 2.2.0/2.2.1), wurde das Folge-Update verpasst. Jetzt sieht das Modul nach jedem abgeschlossenen Update noch 15 Minuten lang jede Minute nach und startet ein dann angebotenes Update automatisch.
+
+#### Geändert
+- Übersicht und Geräteliste: schmalere Spalten, damit der Status mehr Platz hat (Wunsch aus dem Forum, danke!).
+- Beschriftung „Nach einem hier gestarteten Update gleich weiter …“ – Folge-Updates gelten nur für Updates, die über das Modul gestartet wurden. README ergänzt.
+
 ### Build 21 (17.11.2026)
 
 #### Behoben

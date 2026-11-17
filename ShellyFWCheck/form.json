@@ -41,7 +41,7 @@
                         {
                             "caption": "Aktiv",
                             "name": "Active",
-                            "width": "70px",
+                            "width": "60px",
                             "add": true,
                             "edit": {
                                 "type": "CheckBox"
@@ -57,7 +57,7 @@
                         {
                             "caption": "IP-Adresse",
                             "name": "Host",
-                            "width": "180px",
+                            "width": "140px",
                             "add": "",
                             "edit": {
                                 "type": "ValidationTextBox"
@@ -66,7 +66,7 @@
                         {
                             "caption": "Eigenes PW",
                             "name": "OwnPassword",
-                            "width": "110px",
+                            "width": "90px",
                             "add": false,
                             "edit": {
                                 "type": "CheckBox"
@@ -75,7 +75,7 @@
                         {
                             "caption": "Passwort",
                             "name": "Password",
-                            "width": "180px",
+                            "width": "120px",
                             "add": "",
                             "edit": {
                                 "type": "PasswordTextBox"
@@ -84,7 +84,7 @@
                         {
                             "caption": "Batterie",
                             "name": "Battery",
-                            "width": "100px",
+                            "width": "80px",
                             "add": false,
                             "edit": {
                                 "type": "CheckBox"
@@ -93,7 +93,7 @@
                         {
                             "caption": "Wach-Signal (Batterie)",
                             "name": "WakeVar",
-                            "width": "250px",
+                            "width": "200px",
                             "add": 0,
                             "edit": {
                                 "type": "SelectVariable"
@@ -185,7 +185,7 @@
                 {
                     "type": "CheckBox",
                     "name": "ContinueUpdates",
-                    "caption": "Nach einem Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
+                    "caption": "Nach einem hier gestarteten Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
                 },
                 {
                     "type": "CheckBox",
@@ -277,7 +277,7 @@
                 {
                     "caption": "Auswahl",
                     "name": "Select",
-                    "width": "90px",
+                    "width": "70px",
                     "add": false,
                     "edit": {
                         "type": "CheckBox"
@@ -286,13 +286,13 @@
                 {
                     "caption": "Name",
                     "name": "Name",
-                    "width": "260px",
+                    "width": "220px",
                     "add": ""
                 },
                 {
                     "caption": "IP-Adresse",
                     "name": "Host",
-                    "width": "150px",
+                    "width": "130px",
                     "add": "",
                     "onClick": "echo 'http://' . $Status['Host'];",
                     "link": true
@@ -300,25 +300,25 @@
                 {
                     "caption": "Modell",
                     "name": "Model",
-                    "width": "160px",
+                    "width": "130px",
                     "add": ""
                 },
                 {
                     "caption": "Installiert",
                     "name": "Installed",
-                    "width": "130px",
+                    "width": "95px",
                     "add": ""
                 },
                 {
                     "caption": "Verfügbar",
                     "name": "Available",
-                    "width": "130px",
+                    "width": "95px",
                     "add": ""
                 },
                 {
                     "caption": "Auto-Update",
                     "name": "Auto",
-                    "width": "130px",
+                    "width": "105px",
                     "add": ""
                 },
                 {
