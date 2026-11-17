@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 19 (17.11.2026)
+
+#### Behoben
+- Nach dem Vormerken bzw. Start eines Batteriegeräts blieb der Haken nach dem Update stehen. Vorgemerkte Geräte werden jetzt aus der Auswahl genommen – ihr Haken zeigt nur noch die Vormerkung.
+- Der Titel „Update-Verlauf (n)“ zählte neue Einträge erst nach dem Neuöffnen des Formulars mit.
+
+#### Dokumentation
+- Shelly Flood Gen4 bestätigt: von Hand eingetragen, noch nie wach gewesen, vorgemerkt – per Taste geweckt, in einer Sekunde erkannt, geprüft und aktualisiert (1.7.99 → 2.0.3).
+
 ### Build 18 (17.11.2026)
 
 #### Geändert

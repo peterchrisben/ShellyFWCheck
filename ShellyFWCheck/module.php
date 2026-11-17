@@ -671,6 +671,12 @@ class ShellyFWCheck extends IPSModule
         foreach ($marked as $host) {
             $this->StartUpdate($host, $message);
         }
+        if (count($marked) > 0) {
+            // vorgemerkte Geräte aus der Auswahl nehmen – ihr Haken zeigt ab jetzt die Vormerkung
+            $selected = json_decode($this->GetBuffer('Selected'), true);
+            $keys = array_map([$this, 'HostKey'], $marked);
+            $this->SetBuffer('Selected', json_encode(array_values(array_diff(is_array($selected) ? $selected : [], $keys))));
+        }
         if (count($queue) === 0 && count($marked) > 0) {
             $this->ShowResult(count($marked) === 1 ? (string) $message
                 : $this->T('%d Batteriegeräte schlafen – ihre Updates sind vorgemerkt und starten beim nächsten Aufwachen.', count($marked)));
@@ -868,6 +874,7 @@ class ShellyFWCheck extends IPSModule
         $history = array_merge($entries, is_array($history) ? $history : []);   // neueste zuerst
         $this->WriteAttributeString('History', json_encode(array_slice($history, 0, self::HISTORY_MAX)));
         $this->UpdateFormField('History', 'values', json_encode($this->HistoryRows()));
+        $this->UpdateFormField('PanelHistory', 'caption', $this->T('Update-Verlauf (%d)', count($this->HistoryRows())));
     }
 
     private function HistoryRows(): array
