@@ -2,6 +2,15 @@
 
 ## Version 1.0
 
+### Build 20 (17.11.2026)
+
+#### Behoben
+- Mehrere Batteriegeräte, die kurz nacheinander aufwachen (z. B. per Taste im Abstand von 1–2 Sekunden geweckt): Das nächste Gerät wartet jetzt, bis die Abfrage des vorigen fertig ist, statt erst 2 Sekunden später einen neuen Versuch zu starten – da schlief es meist schon wieder. Läuft gerade die große Abfrage aller Geräte, wird bis zu 10 Sekunden nach dem Aufwachen im Sekundentakt nachgefasst; danach bleibt das Gerät vorgemerkt.
+- Ein Wach-Signal konnte verloren gehen, wenn mehrere Geräte in ungünstiger Reihenfolge aufwachten.
+
+#### Dokumentation
+- README: Tipp für mehrere Batteriegeräte (erst alle vormerken, dann nacheinander wecken).
+
 ### Build 19 (17.11.2026)
 
 #### Behoben

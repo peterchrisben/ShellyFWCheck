@@ -181,6 +181,34 @@ class ShellyFWCheck extends IPSModule
         }
     }
 
+    /**
+     * Abfrage der gerade aufgewachten Batteriegeräte. Läuft noch die Abfrage eines anderen Geräts (dauert gut eine
+     * Sekunde), wird darauf gewartet – ein Neuversuch käme zu spät, das Gerät ist nur rund 2 Sekunden wach.
+     */
+    private function WakeCheck(): void
+    {
+        $this->SetTimerInterval('Wake', 0);
+        $hosts = json_decode($this->GetBuffer('WakeHosts'), true);
+        $this->SetBuffer('WakeHosts', '[]');
+        if (!is_array($hosts) || count($hosts) === 0) {
+            return;
+        }
+        if ($this->RunCheck($hosts, true, 3000)) {
+            return;
+        }
+        // Gerade läuft die große Abfrage aller Geräte: kurz danach noch einmal – aber nur, solange das Gerät
+        // vielleicht noch wach ist. Sonst bleibt es vorgemerkt und kommt beim nächsten Aufwachen dran.
+        $seen = json_decode($this->GetBuffer('WakeSeen'), true);
+        $seen = is_array($seen) ? $seen : [];
+        $hosts = array_filter($hosts, fn (string $k): bool => time() - (int) ($seen[$k] ?? 0) <= 10);
+        $more = json_decode($this->GetBuffer('WakeHosts'), true);   // inzwischen dazugekommene behalten
+        $hosts = array_values(array_unique(array_merge(is_array($more) ? $more : [], $hosts)));
+        $this->SetBuffer('WakeHosts', json_encode($hosts));
+        if (count($hosts) > 0) {
+            $this->SetTimerInterval('Wake', 1000);
+        }
+    }
+
     /** Mindestabstand (Sekunden) zwischen zwei Abfragen desselben Batteriegeräts durch das Wach-Signal. */
     protected function WakeGap(): int
     {
@@ -198,14 +226,7 @@ class ShellyFWCheck extends IPSModule
                 $this->WorkQueue();
                 break;
             case 'TimerWake':
-                $this->SetTimerInterval('Wake', 0);
-                $hosts = json_decode($this->GetBuffer('WakeHosts'), true);
-                $this->SetBuffer('WakeHosts', '[]');
-                if (is_array($hosts) && count($hosts) > 0 && !$this->RunCheck($hosts, true)) {
-                    // gerade läuft eine volle Abfrage – gleich noch einmal versuchen
-                    $this->SetBuffer('WakeHosts', json_encode($hosts));
-                    $this->SetTimerInterval('Wake', 2000);
-                }
+                $this->WakeCheck();
                 break;
             case 'TimerVerify':
                 $this->CheckAll();
@@ -280,10 +301,10 @@ class ShellyFWCheck extends IPSModule
      * Abfrage aller aktiven Geräte ($only = null) oder nur der genannten (Host-Schlüssel, z. B. beim Wach-Signal).
      * $quiet: keine Meldungen im Formular (Abfrage im Hintergrund). false = gerade läuft schon eine Abfrage.
      */
-    private function RunCheck(?array $only, bool $quiet): bool
+    private function RunCheck(?array $only, bool $quiet, int $wait = 100): bool
     {
         $key = 'ShellyFWCheck' . $this->InstanceID . '_Check';
-        if (!IPS_SemaphoreEnter($key, 100)) {
+        if (!IPS_SemaphoreEnter($key, $wait)) {
             if (!$quiet) {
                 $this->ShowResult($this->T('Abfrage läuft bereits …'));
             }

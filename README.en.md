@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 19)
+Current version: 1.0 (Build 20)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 
@@ -35,6 +35,8 @@ As long as no device is entered, Symcon shows "Instance is inactive" – that is
 **Wake signal:** so that the module catches the right moment, select a variable in the column "Wake signal" that is written whenever the device wakes up – e.g. the temperature from the Shelly module (MQTT). When it is updated, the module queries only this device right away.
 
 **Update for a sleeping device:** tick it and press "Update selected" (or "Start all updates"). The update is **scheduled** and starts by itself when the device next wakes up – even if the module does not yet know whether there is an update: when the device wakes up it asks for an update and starts one that exists right away – this also works for a device just added by hand that has never been awake ("Start all updates" only includes devices with a known update); it is confirmed on the wake-up after that. Without a wake signal this only works if the device happens to be awake during a check. Scheduled devices are shown in blue with their tick set in the overview. **Cancel:** remove the tick – the scheduled update is cancelled right away, "Apply changes" is not needed for this. Removing the tick "Battery" in the device list also discards the scheduled update.
+
+**Tip for several devices:** first schedule all of them, then – if you do not want to wait – wake the devices one after another by button, ideally a few seconds apart. If several devices wake up shortly after each other, the module handles them in turn. Only during the big check of all devices ("Check now" or the automatic check, takes about half a minute) a device can be missed; it then stays scheduled and is handled when it next wakes up.
 
 If a device has a different password: under "Manage devices" tick **Own PW** in its row and enter the password there. The user name is always "admin" on Shelly devices.
 
