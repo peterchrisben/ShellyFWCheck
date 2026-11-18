@@ -1610,21 +1610,26 @@ class ShellyFWCheck extends IPSModule
         [$code, $arg] = array_pad(explode('|', $note, 2), 2, '');
         switch ($code) {
             case 'done':
-                return $this->T('Aktualisiert (vorher %s)', $arg);
+                return $this->T('Aktualisiert (von %s)', $arg);
             case 'unconfirmed':
-                return $this->T('nach %d Minuten weiter %s – erneut starten oder in der Weboberfläche nachsehen', (int) (self::VERIFY_MAX / 60), $arg);
+                return $this->T('Nicht bestätigt – bitte erneut starten');
             case 'unreachable':
-                return $this->T('Update nicht bestätigt – Gerät seit dem Start nicht erreichbar');
+                return $this->T('Nicht bestätigt – Gerät offline');
             case 'stepfail':
-                return $this->T('Zwischenschritt erledigt, nächster Schritt nicht gestartet') . ($arg !== '' ? ': ' . $arg : '');
+                return $this->T('Nächster Schritt nicht gestartet') . ($arg !== '' ? ': ' . $arg : '');
         }
         return $note;   // Merker aus Build 11 und älter stehen schon als Text da
+    }
+
+    /** Zeitpunkt kurz: heute nur Uhrzeit, sonst mit Datum. */
+    private function When(int $ts): string
+    {
+        return date('Y-m-d', $ts) === date('Y-m-d') ? date('H:i', $ts) : date('d.m. H:i', $ts);
     }
 
     private function StateText(array $e): string
     {
         if ($e['upd_start'] > 0) {
-            $minutes = (int) floor((time() - $e['upd_start']) / 60);
             $parts = [];
             if ($e['upd_chain'] > 0) {
                 $parts[] = $this->T('Folge-Update');
@@ -1632,33 +1637,29 @@ class ShellyFWCheck extends IPSModule
             if ($e['upd_tries'] > 1) {
                 $parts[] = $this->T('Schritt %d', $e['upd_tries']);
             }
-            $parts[] = $this->T('gestartet %s', date('H:i', $e['upd_start']));
-            if ($minutes >= 3 && $e['online']) {
-                $parts[] = $this->T('Gerät meldet noch %s – Updates in mehreren Schritten dauern länger', $e['ver']);
-            }
+            $parts[] = $this->T('seit %s', $this->When($e['upd_start']));
             if ($e['battery'] && !$e['online']) {
-                $parts[] = $this->T('Bestätigung beim nächsten Aufwachen');
+                $parts[] = $this->T('Bestätigung beim Aufwachen');
             }
-            return $this->T('Update auf %s läuft …', $e['upd_target'] !== '' ? $e['upd_target'] : $this->T('neueste Version')) . ' (' . implode(', ', $parts) . ')';
+            return $this->T('Update läuft') . ' (' . implode(', ', $parts) . ')';
         }
         if ($e['pending']) {
-            return $e['avail'] !== '' ? $this->T('Update auf %s vorgemerkt – startet beim nächsten Aufwachen (Haken heraus = abbrechen)', $e['avail'])
-                : $this->T('Vorgemerkt – beim nächsten Aufwachen nach Update sehen und starten (Haken heraus = abbrechen)');
+            return $e['avail'] !== '' ? $this->T('Vorgemerkt – startet beim Aufwachen') : $this->T('Vorgemerkt – prüft beim Aufwachen');
         }
         if ($e['err'] === 'sleep' && $e['avail'] === '' && $this->NoteIsDone($e['note'])) {
-            return $this->NoteText($e['note']) . ' – ' . $this->T('schläft (zuletzt wach %s)', date('d.m. H:i', $e['seen']));
+            return $this->NoteText($e['note']) . ', ' . $this->T('schläft');
         }
         if ($e['err'] === 'sleep' && $e['avail'] !== '') {
-            return $this->T('Schläft – Update auf %s verfügbar (zuletzt wach %s)', $e['avail'], date('d.m. H:i', $e['seen']));
+            return $this->T('Schläft – Update verfügbar (wach %s)', $this->When($e['seen']));
         }
         switch ($e['err']) {
             case 'offline':
-                return $e['seen'] > 0 ? $this->T('Nicht erreichbar (zuletzt %s)', date('d.m. H:i', $e['seen'])) : $this->T('Nicht erreichbar');
+                return $e['seen'] > 0 ? $this->T('Nicht erreichbar (zuletzt %s)', $this->When($e['seen'])) : $this->T('Nicht erreichbar');
             case 'sleep':
-                return $e['seen'] > 0 ? $this->T('Schläft (Batteriegerät, zuletzt wach %s)', date('d.m. H:i', $e['seen']))
-                    : $this->T('Schläft (Batteriegerät, bisher nie wach erreicht)');
+                return $e['seen'] > 0 ? $this->T('Schläft (wach %s)', $this->When($e['seen']))
+                    : $this->T('Schläft (noch nie wach)');
             case 'gen1':
-                return $this->T('Gen1-Gerät – wird nicht unterstützt');
+                return $this->T('Gen1 – nicht unterstützt');
             case 'auth_missing':
                 return $this->T('Passwort fehlt');
             case 'auth_wrong':
@@ -1673,13 +1674,13 @@ class ShellyFWCheck extends IPSModule
             return $this->NoteText($e['note']);
         }
         if ($e['battery'] && $e['avail'] === '' && !$e['sure']) {
-            return $this->T('Kein Update gemeldet (Batteriegerät – Angabe unsicher)');
+            return $this->T('Kein Update gemeldet (unsicher)');
         }
         if ($e['avail'] !== '') {
             if ($this->NoteIsDone($e['note'])) {
-                return $this->T('Weiteres Update verfügbar (gerade aktualisiert)');
+                return $this->T('Weiteres Update verfügbar');
             }
-            return $e['note'] !== '' ? $this->T('Update verfügbar – nicht bestätigt: %s', $this->NoteText($e['note'])) : $this->T('Update verfügbar');
+            return $e['note'] !== '' ? $this->NoteText($e['note']) : $this->T('Update verfügbar');
         }
         return $this->T('Aktuell');
     }

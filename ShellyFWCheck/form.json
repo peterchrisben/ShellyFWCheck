@@ -333,7 +333,7 @@
         },
         {
             "type": "Label",
-            "caption": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts."
+            "caption": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts. Manche Updates laufen in mehreren Schritten und dauern dann einige Minuten."
         },
         {
             "type": "ExpansionPanel",

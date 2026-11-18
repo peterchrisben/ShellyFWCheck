@@ -2,6 +2,13 @@
 
 ## Version 1.0
 
+### Build 23 (18.11.2026)
+
+#### Geändert
+- Kürzere Texte in der Status-Spalte, damit sie auch auf dem Tablet ganz lesbar sind (Wunsch aus dem Forum): z. B. „Update läuft (Folge-Update, Schritt 2, seit 18:40)“, „Vorgemerkt – startet beim Aufwachen“, „Schläft (wach 18:40)“, „Nicht bestätigt – bitte erneut starten“. Was schon in anderen Spalten steht (Version, Batteriegerät), wiederholt der Status nicht mehr.
+- Zeitangaben im Status: von heute nur die Uhrzeit, sonst mit Datum.
+- Hinweis unter der Übersicht ergänzt: Updates in mehreren Schritten dauern einige Minuten. Die Bedienhinweise („Haken heraus = abbrechen“) stehen nur noch dort, nicht mehr in jeder Zeile.
+
 ### Build 22 (17.11.2026)
 
 #### Behoben
