@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 27 (18.11.2026)
+
+#### Behoben
+- Lief ein Update schon im Gerät (z. B. in der Weboberfläche gestartet) und wurde dann im Modul noch einmal angestoßen, stand im Verlauf „Modul“ und in der Meldung „Update gestartet“. Jetzt: Meldung „Update läuft bereits im Gerät – das Modul überwacht es.“ und im Verlauf „nicht über das Modul“. Überwachung, Zwischenschritte und Folge-Updates laufen wie gewohnt (am Plug M Gen3 getestet).
+
 ### Build 26 (18.11.2026)
 
 #### Behoben

@@ -173,7 +173,8 @@
             "Weiteres Update verfügbar": "Another update available",
             "nicht über das Modul": "not via the module",
             "Shelly Firmware-Check %s (Build %d)": "Shelly Firmware Check %s (build %d)",
-            "Die letzten 50 Versionswechsel, neueste zuerst. „nicht über das Modul“ heißt: Auto-Update des Geräts, Weboberfläche, App oder Shelly selbst.": "The last 50 version changes, newest first. \"not via the module\" means: auto update of the device, web interface, app or Shelly itself."
+            "Die letzten 50 Versionswechsel, neueste zuerst. „nicht über das Modul“ heißt: Auto-Update des Geräts, Weboberfläche, App oder Shelly selbst.": "The last 50 version changes, newest first. \"not via the module\" means: auto update of the device, web interface, app or Shelly itself.",
+            "%s: Update läuft bereits im Gerät – das Modul überwacht es.": "%s: update is already running in the device – the module is monitoring it."
         }
     }
 }

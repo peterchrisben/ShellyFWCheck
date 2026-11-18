@@ -394,7 +394,7 @@ class ShellyFWCheck extends IPSModule
                     // Update wurde gestartet: nur auf die neue Version warten
                     if ($e['ver'] !== $e['upd_from']) {
                         $history[] = ['ts' => $now, 'name' => $e['name'], 'from' => $e['upd_from'], 'to' => $e['ver'],
-                            'by' => $e['upd_chain'] > 0 ? 'chain' : 'module'];
+                            'by' => $e['upd_chain'] > 0 ? 'chain' : ($e['upd_ext'] ? 'external' : 'module')];
                         $this->LogMessage($this->T('%s: Firmware aktualisiert von %s auf %s', $e['name'], $e['upd_from'], $e['ver']), KL_NOTIFY);
                         $e['upd_start'] = 0;
                         $e['avail'] = '';
@@ -660,6 +660,7 @@ class ShellyFWCheck extends IPSModule
         $e['upd_tries'] = 1;
         $e['upd_step'] = 0;
         $e['upd_chain'] = 0;
+        $e['upd_ext'] = false;
         $e['pending'] = false;
         $e['note'] = '';
         return $e;
@@ -1232,11 +1233,14 @@ class ShellyFWCheck extends IPSModule
             $this->LogMessage($message, KL_WARNING);
             return false;
         }
+        $busy = $this->Busy($res);
         $e = $this->MarkStarted($e, time());
+        $e['upd_ext'] = $busy;   // lief schon (z. B. in der Weboberfläche gestartet) – im Verlauf „nicht über das Modul“
         $state[$k] = $e;
         $this->SaveState($orig, $state);
         $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
-        $message = $this->T('%s: Update auf %s gestartet. Das Gerät startet gleich neu.', $e['name'], $e['avail']);
+        $message = $busy ? $this->T('%s: Update läuft bereits im Gerät – das Modul überwacht es.', $e['name'])
+            : $this->T('%s: Update auf %s gestartet. Das Gerät startet gleich neu.', $e['name'], $e['avail']);
         $this->LogMessage($message, KL_NOTIFY);
         return true;
     }
@@ -1603,7 +1607,7 @@ class ShellyFWCheck extends IPSModule
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
             'auto' => '', 'auto_spec' => '', 'auto_jobs' => [],
             'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0,
-            'upd_chain' => 0, 'battery' => false, 'pending' => false, 'sure' => false, 'chain_until' => 0];
+            'upd_chain' => 0, 'upd_ext' => false, 'battery' => false, 'pending' => false, 'sure' => false, 'chain_until' => 0];
     }
 
     private function ReadState(): array
