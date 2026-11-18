@@ -2,6 +2,12 @@
 
 ## Version 1.0
 
+### Build 26 (18.11.2026)
+
+#### Behoben
+- Zweistufige Updates, bei denen das Gerät nach dem Zwischenschritt von selbst weitermacht (Shelly 2.2.0 auf dem Plug S Gen3): Das Modul stieß den nächsten Schritt noch einmal an, das Gerät antwortete „Already in progress“, und das Modul brach die Überwachung ab. Das Update lief trotzdem durch, stand aber im Verlauf als „nicht über das Modul“, dazu zwei Warnungen (Forum, demel42). „Already in progress“ heißt jetzt: Update läuft, weiter warten.
+- Dasselbe beim Start per Knopf, Folge-Update oder Wach-Signal: Aktualisiert das Gerät schon, überwacht das Modul das laufende Update, statt einen Fehler zu melden.
+
 ### Build 25 (18.11.2026)
 
 #### Neu

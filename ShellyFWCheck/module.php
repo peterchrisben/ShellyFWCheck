@@ -482,7 +482,7 @@ class ShellyFWCheck extends IPSModule
             // vorgemerkte Updates sofort starten, solange das Gerät wach ist
             foreach ($this->RpcBatch($wakeStart) as $k => $res) {
                 $e = $state[$k];
-                if ($res['ok']) {
+                if ($res['ok'] || $this->Busy($res)) {
                     $e = $this->MarkStarted($e, $now);
                     unset($found[$k]);
                     $this->LogMessage($this->T('%s: Batteriegerät ist wach – vorgemerktes Update gestartet', $e['name']), KL_NOTIFY);
@@ -524,6 +524,12 @@ class ShellyFWCheck extends IPSModule
                     $e['upd_step'] = 0;
                     $this->LogMessage($this->T('%s: Zwischenschritt erledigt (weiter %s) – Update auf %s erneut angestoßen (Schritt %d)',
                         $e['name'], $e['ver'], $e['upd_target'], $e['upd_tries']), KL_NOTIFY);
+                } elseif ($this->Busy($res)) {
+                    // Das Gerät macht von selbst weiter (z. B. Shelly 2.2.0 in zwei Schritten auf dem Plug S Gen3,
+                    // Forum demel42) – kein Fehler: weiter auf die neue Version warten.
+                    $e['upd_slot'] = $e['slot'];
+                    $e['upd_step'] = 0;
+                    $this->SendDebug('Update', $e['name'] . ': nächster Schritt läuft im Gerät schon von selbst – warte weiter', 0);
                 } else {
                     $e['upd_start'] = 0;
                     $e['note'] = 'stepfail|' . $res['msg'];
@@ -567,7 +573,7 @@ class ShellyFWCheck extends IPSModule
                 }
                 foreach ($this->RpcBatch($next) as $k => $res) {
                     $e = $state[$k];
-                    if ($res['ok']) {
+                    if ($res['ok'] || $this->Busy($res)) {   // „Already in progress“: das Gerät aktualisiert schon – mitzählen und überwachen
                         $chain = $e['upd_chain'] + 1;
                         $e = $this->MarkStarted($e, $now);
                         $e['upd_chain'] = $chain;
@@ -1149,6 +1155,12 @@ class ShellyFWCheck extends IPSModule
         return $calls;
     }
 
+    /** Gerät meldet „Already in progress“: es läuft schon ein Update – kein Fehler. */
+    private function Busy(array $res): bool
+    {
+        return !$res['ok'] && stripos((string) ($res['msg'] ?? ''), 'in progress') !== false;
+    }
+
     private function ErrorText(array $res): string
     {
         $map = ['offline' => $this->T('nicht erreichbar'), 'auth_missing' => $this->T('Passwort fehlt'), 'auth_wrong' => $this->T('Passwort falsch')];
@@ -1211,7 +1223,7 @@ class ShellyFWCheck extends IPSModule
             $this->LogMessage($message, KL_NOTIFY);
             return true;
         }
-        if (!$res['ok']) {
+        if (!$res['ok'] && !$this->Busy($res)) {   // „Already in progress“: Gerät aktualisiert schon – dann eben überwachen
             $e['err'] = $res['err'];
             $e['msg'] = $res['msg'];
             $state[$k] = $e;
