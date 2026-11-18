@@ -384,9 +384,14 @@
                 },
                 {
                     "type": "Label",
-                    "caption": "Die letzten 50 Versionswechsel, neueste zuerst. „Gerät selbst / von außen“ heißt: Auto-Update des Geräts, Weboberfläche oder App."
+                    "caption": "Die letzten 50 Versionswechsel, neueste zuerst. „nicht über das Modul“ heißt: Auto-Update des Geräts, Weboberfläche, App oder Shelly selbst."
                 }
             ]
+        },
+        {
+            "type": "Label",
+            "name": "BuildInfo",
+            "caption": ""
         }
     ],
     "status": []

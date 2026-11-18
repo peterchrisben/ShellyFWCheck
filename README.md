@@ -4,7 +4,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 24)
+Aktuelle Version: 1.0 (Build 25)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -63,7 +63,7 @@ Umstellen: Haken bei den Geräten setzen und in der Zeile „Auto-Update im Ger�
 
 **Push-Nachricht:** Unter „Prüfung, Nachricht und Anzeige“ lässt sich eine Kachel-Visualisierung auswählen. Findet eine Prüfung ein neues Update, bekommt sie eine Nachricht („Update verfügbar: Name (Version)“), je Update nur einmal. Ohne Auswahl gibt es keine Nachricht. Mit „Test-Nachricht senden“ lässt sich das ausprobieren.
 
-**Update-Verlauf:** Ganz unten im Formular stehen die letzten 50 Versionswechsel mit Zeitpunkt, Gerät, alter und neuer Version und Auslöser (Modul, Folge-Update oder „Gerät selbst / von außen“ für Auto-Update, Weboberfläche und App).
+**Update-Verlauf:** Ganz unten im Formular stehen die letzten 50 Versionswechsel mit Zeitpunkt, Gerät, alter und neuer Version und Auslöser (Modul, Folge-Update oder „nicht über das Modul“ für Auto-Update, Weboberfläche, App oder Shelly selbst). Die installierte Version des Moduls steht ganz unten im Formular.
 
 **Bedienung aus der Visualisierung:** Mit dem Haken „Bedienung aus der Visualisierung freigeben“ unter „Updates“ legt das Modul die Variable „Befehl“ an (Jetzt prüfen / Alle Updates starten). Ohne Freigabe gibt es die Variable nicht. Achtung: „Alle Updates starten“ läuft aus der Visualisierung ohne Rückfrage.
 
@@ -91,7 +91,7 @@ SFW_UpdateAll($id);                     // alle verfügbaren Updates nacheinande
 SFW_Discover($id);                      // Gerätesuche (trägt nur ins offene Formular ein)
 SFW_SetAutoUpdate($id, '["192.168.1.50"]', 'stable'); // Auto-Update im Gerät: 'off', 'stable' oder 'beta'
 SFW_GetDevices($id);                    // Stand aller Geräte als JSON
-SFW_GetHistory($id);                    // Update-Verlauf als JSON (neueste zuerst); by: module, chain (Folge-Update), external (Gerät selbst / von außen)
+SFW_GetHistory($id);                    // Update-Verlauf als JSON (neueste zuerst); by: module, chain (Folge-Update), external (nicht über das Modul)
 ```
 
 ## Hinweise

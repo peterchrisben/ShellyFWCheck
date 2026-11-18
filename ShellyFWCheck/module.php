@@ -12,6 +12,7 @@ declare(strict_types=1);
 class ShellyFWCheck extends IPSModule
 {
     private const DNSSD_GUID = '{780B2D48-916C-4D59-AD35-5A429B2355A5}';
+    private const LIBRARY_ID = '{8DB7749D-A1DB-42A4-9EC0-30CA557C88B8}';   // eigene Bibliothek (library.json) – für die Versionsangabe im Formular
     private const VERIFY_SECONDS = 60;      // Abstand der Kontrollabfragen nach einem Update
     private const VERIFY_MAX = 900;         // so lange (Sekunden) wird auf die neue Version gewartet
     private const MAX_STEPS = 4;            // höchstens so viele Anstöße je Update (mehrstufige Updates)
@@ -283,11 +284,22 @@ class ShellyFWCheck extends IPSModule
             'PanelSettings' => ['caption' => $this->T('Prüfung, Nachricht und Anzeige (%s)', $this->SettingsSummary())],
             'PanelUpdates'  => ['caption' => $this->ReadPropertyBoolean('ContinueUpdates') ? $this->T('Updates (Folge-Updates an)') : $this->T('Updates (Folge-Updates aus)')],
             'PanelPassword' => ['expanded' => $noSetup,
-                'caption' => $this->ReadPropertyString('MasterPassword') !== '' ? $this->T('Passwort (Master-Passwort hinterlegt)') : $this->T('Passwort')]
+                'caption' => $this->ReadPropertyString('MasterPassword') !== '' ? $this->T('Passwort (Master-Passwort hinterlegt)') : $this->T('Passwort')],
+            'BuildInfo'     => ['caption' => $this->BuildText()]
         ];
         $this->FillForm($form['elements'], $fill);
         $this->FillForm($form['actions'], $fill);
         return json_encode($form);
+    }
+
+    /** Installierte Version des Moduls, z. B. „Shelly Firmware-Check 1.0 (Build 25)“ – leer, falls Symcon sie nicht liefert. */
+    private function BuildText(): string
+    {
+        if (!IPS_LibraryExists(self::LIBRARY_ID)) {
+            return '';
+        }
+        $lib = IPS_GetLibrary(self::LIBRARY_ID);
+        return $this->T('Shelly Firmware-Check %s (Build %d)', (string) ($lib['Version'] ?? ''), (int) ($lib['Build'] ?? 0));
     }
 
     // ------------------------------------------------------------ öffentlich
@@ -938,7 +950,7 @@ class ShellyFWCheck extends IPSModule
     private function HistoryRows(): array
     {
         $history = json_decode($this->ReadAttributeString('History'), true);
-        $by = ['module' => $this->T('Modul'), 'chain' => $this->T('Modul (Folge-Update)'), 'external' => $this->T('Gerät selbst / von außen')];
+        $by = ['module' => $this->T('Modul'), 'chain' => $this->T('Modul (Folge-Update)'), 'external' => $this->T('nicht über das Modul')];
         $rows = [];
         foreach (is_array($history) ? $history : [] as $h) {
             $rows[] = ['Time' => date('d.m.Y H:i', (int) ($h['ts'] ?? 0)), 'Name' => (string) ($h['name'] ?? ''),
@@ -947,7 +959,7 @@ class ShellyFWCheck extends IPSModule
         return $rows;
     }
 
-    /** Update-Verlauf als JSON (neueste zuerst): ts, name, from, to, by (module = dieses Modul, chain = Folge-Update, external = Gerät selbst / von außen). */
+    /** Update-Verlauf als JSON (neueste zuerst): ts, name, from, to, by (module = dieses Modul, chain = Folge-Update, external = nicht über das Modul: Auto-Update des Geräts, Weboberfläche, App, Shelly selbst). */
     public function GetHistory(): string
     {
         $history = json_decode($this->ReadAttributeString('History'), true);

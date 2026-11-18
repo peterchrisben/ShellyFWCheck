@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 24)
+Current version: 1.0 (Build 25)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 
@@ -63,7 +63,7 @@ To change it: tick the devices and press **Off** or **Stable (daily at midnight)
 
 **Push message:** under "Check, notification and display" you can select a tile visualization. When a check finds a new update, it receives a message ("Update available: name (version)"), only once per update. Without a selection there is no message. "Send test message" lets you try it out.
 
-**Update history:** at the very bottom of the form you find the last 50 version changes with time, device, old and new version and what triggered them (module, follow-up update or "Device itself / from outside" for auto update, web interface and app).
+**Update history:** at the very bottom of the form you find the last 50 version changes with time, device, old and new version and what triggered them (module, follow-up update or "not via the module" for auto update, web interface, app or Shelly itself). The installed version of the module is shown at the very bottom of the form.
 
 **Control from the visualization:** with the tick "Enable control from the visualization" under "Updates" the module creates the variable "Command" (Check now / Start all updates). Without it the variable does not exist. Note: "Start all updates" runs from the visualization without confirmation.
 
@@ -93,7 +93,7 @@ SFW_UpdateAll($id);                     // start all available updates one after
 SFW_Discover($id);                      // device search (only fills the open form)
 SFW_SetAutoUpdate($id, '["192.168.1.50"]', 'stable'); // auto update in the device: 'off', 'stable' or 'beta'
 SFW_GetDevices($id);                    // state of all devices as JSON
-SFW_GetHistory($id);                    // update history as JSON (newest first); by: module, chain (follow-up update), external (device itself / from outside)
+SFW_GetHistory($id);                    // update history as JSON (newest first); by: module, chain (follow-up update), external (not via the module)
 ```
 
 ## Notes

@@ -2,6 +2,14 @@
 
 ## Version 1.0
 
+### Build 25 (18.11.2026)
+
+#### Neu
+- Ganz unten im Formular steht die installierte Version des Moduls (z. B. „Shelly Firmware-Check 1.0 (Build 25)“).
+
+#### Geändert
+- Update-Verlauf: „Gerät selbst / von außen“ heißt jetzt „nicht über das Modul“ – eindeutiger, es war nie „manuell“ gemeint (Forum, demel42).
+
 ### Build 24 (18.11.2026)
 
 #### Behoben
