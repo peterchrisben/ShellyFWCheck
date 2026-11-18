@@ -2,6 +2,12 @@
 
 ## Version 1.0
 
+### Build 24 (18.11.2026)
+
+#### Behoben
+- Wurde ein Update gestartet, während gerade eine Abfrage lief (z. B. die minütliche Kontrolle eines anderen laufenden Updates), überschrieb die Abfrage beim Speichern den Start-Merker. Das Update lief trotzdem, erschien im Verlauf aber als „Gerät selbst / von außen“ (Forum, demel42). Jetzt führt das Modul beim Speichern zusammen, was inzwischen geändert wurde.
+- Mehrere Update-Anforderungen kurz nacheinander: Eine neue Anforderung ersetzte die noch wartenden Geräte der vorigen – die fielen still heraus. Jetzt werden neue Geräte hinten angehängt, der eingestellte Abstand bleibt.
+
 ### Build 23 (18.11.2026)
 
 #### Geändert

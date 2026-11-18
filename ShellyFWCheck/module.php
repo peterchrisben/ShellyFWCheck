@@ -122,7 +122,7 @@ class ShellyFWCheck extends IPSModule
             }
         }
         if ($pruned !== $state) {
-            $this->WriteState($pruned);
+            $this->SaveState($state, $pruned);
         }
         $this->SetBuffer('Queue', '[]');
         $this->SetBuffer('Selected', '[]');
@@ -320,6 +320,7 @@ class ShellyFWCheck extends IPSModule
                 $this->ShowResult($this->T('Abfrage läuft … (%d Geräte, kann bis zu einer halben Minute dauern)', count($rows)));
             }
             $state = $this->ReadState();
+            $orig = $state;   // Stand beim Start – beim Speichern mit inzwischen gestarteten Updates zusammenführen
             $now = time();
             $fast = [];       // Batteriegeräte: nur die schnelle Abfrage, solange sie wach sind
 
@@ -570,7 +571,7 @@ class ShellyFWCheck extends IPSModule
                 }
             }
 
-            $this->WriteState($state);
+            $this->SaveState($orig, $state);
             if ($only === null) {
                 $this->WriteAttributeInteger('LastCheck', $now);
             }
@@ -721,8 +722,13 @@ class ShellyFWCheck extends IPSModule
         $count = count($queue) + count($marked);
         $gap = max(5, $this->ReadPropertyInteger('UpdateGap'));
         $this->SetBuffer('Selected', '[]');
-        $this->SetBuffer('Queue', json_encode($queue));
-        $this->WorkQueue();
+        // Läuft schon eine Warteschlange, hinten anhängen (Abstand bleibt) – nicht ersetzen
+        $waiting = json_decode($this->GetBuffer('Queue'), true);
+        $waiting = is_array($waiting) ? $waiting : [];
+        $this->SetBuffer('Queue', json_encode(array_values(array_unique(array_merge($waiting, $queue)))));
+        if (count($waiting) === 0) {
+            $this->WorkQueue();
+        }
         $this->ShowResult($count === 1
             ? $this->T('1 Update gestartet. Der Status in der Übersicht zeigt den Fortschritt.')
             : $this->T('%d Updates eingeplant – ein Gerät alle %d Sekunden. Der Status in der Übersicht zeigt den Fortschritt.', $count, $gap));
@@ -1037,6 +1043,7 @@ class ShellyFWCheck extends IPSModule
             $this->ShowResult($this->T('Auto-Update wird umgestellt …'));
             $only = array_map([$this, 'HostKey'], array_map('strval', $list));
             $state = $this->ReadState();
+            $orig = $state;
             $base = [];
             foreach ($this->ActiveRows() as $row) {
                 $k = $this->HostKey($row['Host']);
@@ -1104,7 +1111,7 @@ class ShellyFWCheck extends IPSModule
                     $failed[$k] = $this->T('Gerät meldet danach „%s“', $this->AutoText($state[$k]));
                 }
             }
-            $this->WriteState($state);
+            $this->SaveState($orig, $state);
             $this->SetBuffer('Selected', '[]');
             $this->PublishValues();
             $this->RefreshForm();
@@ -1149,6 +1156,7 @@ class ShellyFWCheck extends IPSModule
             }
         }
         $state = $this->ReadState();
+        $orig = $state;
         $e = $state[$k] ?? null;
         if ($row === null || $e === null) {
             $message = $this->T('%s: Gerät ist nicht gespeichert oder wurde noch nicht geprüft.', $host);
@@ -1166,7 +1174,7 @@ class ShellyFWCheck extends IPSModule
             // Batteriegerät schläft, Update noch unbekannt: beim nächsten Aufwachen nachsehen und gleich starten
             $e['pending'] = true;
             $state[$k] = $e;
-            $this->WriteState($state);
+            $this->SaveState($orig, $state);
             $message = $this->T('%s: Batteriegerät schläft – beim nächsten Aufwachen wird nach einem Update gesehen und es gleich gestartet.', $e['name'] !== '' ? $e['name'] : $row['Host']);
             $this->LogMessage($message, KL_NOTIFY);
             return true;
@@ -1186,7 +1194,7 @@ class ShellyFWCheck extends IPSModule
             $e['online'] = false;
             $e['err'] = 'sleep';
             $state[$k] = $e;
-            $this->WriteState($state);
+            $this->SaveState($orig, $state);
             $message = $this->T('%s: Batteriegerät schläft – Update auf %s ist vorgemerkt und startet beim nächsten Aufwachen.', $e['name'], $e['avail']);
             $this->LogMessage($message, KL_NOTIFY);
             return true;
@@ -1195,14 +1203,14 @@ class ShellyFWCheck extends IPSModule
             $e['err'] = $res['err'];
             $e['msg'] = $res['msg'];
             $state[$k] = $e;
-            $this->WriteState($state);
+            $this->SaveState($orig, $state);
             $message = $this->T('%s: Update nicht gestartet – %s', $e['name'], $this->StateText($e));
             $this->LogMessage($message, KL_WARNING);
             return false;
         }
         $e = $this->MarkStarted($e, time());
         $state[$k] = $e;
-        $this->WriteState($state);
+        $this->SaveState($orig, $state);
         $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
         $message = $this->T('%s: Update auf %s gestartet. Das Gerät startet gleich neu.', $e['name'], $e['avail']);
         $this->LogMessage($message, KL_NOTIFY);
@@ -1586,9 +1594,43 @@ class ShellyFWCheck extends IPSModule
         return $state;
     }
 
-    private function WriteState(array $state): void
+    /**
+     * Zustand speichern. Eine Abfrage dauert bis zu einer Minute; startet währenddessen jemand ein Update
+     * (Knopf, Warteschlange, Haken), darf sie das beim Speichern nicht mit ihrem alten Stand überschreiben –
+     * sonst geht der Start-Merker verloren und das Update erscheint im Verlauf als „von außen“ (Forum, demel42).
+     * Darum: frisch lesen und je Feld zusammenführen – was ein anderer seit $orig geändert hat, bleibt stehen.
+     */
+    private function SaveState(array $orig, array $state): void
     {
-        $this->WriteAttributeString('State', json_encode($state));
+        $lock = 'ShellyFWCheck' . $this->InstanceID . '_State';
+        $locked = IPS_SemaphoreEnter($lock, 5000);
+        try {
+            $current = $this->ReadState();
+            $out = [];
+            foreach ($state as $k => $e) {
+                if (isset($orig[$k]) && !isset($current[$k])) {
+                    continue;   // inzwischen aus der Liste entfernt
+                }
+                if (isset($orig[$k], $current[$k])) {
+                    foreach ($current[$k] as $f => $v) {
+                        if ($v !== ($orig[$k][$f] ?? null)) {
+                            $e[$f] = $v;
+                        }
+                    }
+                }
+                $out[$k] = $e;
+            }
+            foreach ($current as $k => $e) {
+                if (!isset($out[$k]) && !isset($orig[$k])) {
+                    $out[$k] = $e;   // inzwischen neu dazugekommen
+                }
+            }
+            $this->WriteAttributeString('State', json_encode($out));
+        } finally {
+            if ($locked) {
+                IPS_SemaphoreLeave($lock);
+            }
+        }
     }
 
     /** Text in der Sprache von Symcon (Übersetzungen in locale.json), Platzhalter wie bei sprintf. */
@@ -1734,6 +1776,7 @@ class ShellyFWCheck extends IPSModule
         $hosts = json_decode($value, true);
         $ticked = is_array($hosts) ? array_values(array_map([$this, 'HostKey'], array_map('strval', $hosts))) : [];
         $state = $this->ReadState();
+        $orig = $state;
         $cancelled = [];
         foreach ($this->ActiveRows() as $row) {
             $k = $this->HostKey($row['Host']);
@@ -1749,7 +1792,7 @@ class ShellyFWCheck extends IPSModule
         }
         $this->SetBuffer('Selected', json_encode($ticked));
         if (count($cancelled) > 0) {
-            $this->WriteState($state);
+            $this->SaveState($orig, $state);
             $text = $this->T('Vormerkung aufgehoben: %s', implode(', ', $cancelled));
             $this->LogMessage($text, KL_NOTIFY);
             $this->ShowResult($text);
