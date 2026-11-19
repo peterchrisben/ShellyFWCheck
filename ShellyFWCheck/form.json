@@ -8,25 +8,25 @@
         {
             "type": "ExpansionPanel",
             "name": "PanelPassword",
-            "caption": "Passwort",
+            "caption": "Password",
             "expanded": false,
             "items": [
                 {
                     "type": "PasswordTextBox",
                     "name": "MasterPassword",
-                    "caption": "Master-Passwort (für alle Geräte)",
+                    "caption": "Master password (for all devices)",
                     "width": "360px"
                 },
                 {
                     "type": "Label",
-                    "caption": "Gilt für alle Geräte ohne Haken bei „Eigenes PW“. Der Benutzername ist bei Shelly immer „admin“. Geräte ohne Passwortschutz brauchen nichts."
+                    "caption": "Applies to all devices without a tick at \"Own PW\". The user name is always \"admin\" on Shelly devices. Devices without password protection need nothing."
                 }
             ]
         },
         {
             "type": "ExpansionPanel",
             "name": "PanelDevices",
-            "caption": "Geräte verwalten",
+            "caption": "Manage devices",
             "expanded": false,
             "items": [
                 {
@@ -39,7 +39,7 @@
                     "loadValuesFromConfiguration": false,
                     "columns": [
                         {
-                            "caption": "Aktiv",
+                            "caption": "Active",
                             "name": "Active",
                             "width": "60px",
                             "add": true,
@@ -55,7 +55,7 @@
                             "save": false
                         },
                         {
-                            "caption": "IP-Adresse",
+                            "caption": "IP address",
                             "name": "Host",
                             "width": "140px",
                             "add": "",
@@ -64,7 +64,7 @@
                             }
                         },
                         {
-                            "caption": "Eigenes PW",
+                            "caption": "Own PW",
                             "name": "OwnPassword",
                             "width": "90px",
                             "add": false,
@@ -73,7 +73,7 @@
                             }
                         },
                         {
-                            "caption": "Passwort",
+                            "caption": "Password",
                             "name": "Password",
                             "width": "120px",
                             "add": "",
@@ -82,7 +82,7 @@
                             }
                         },
                         {
-                            "caption": "Batterie",
+                            "caption": "Battery",
                             "name": "Battery",
                             "width": "80px",
                             "add": false,
@@ -91,7 +91,7 @@
                             }
                         },
                         {
-                            "caption": "Wach-Signal (Batterie)",
+                            "caption": "Wake signal (battery)",
                             "name": "WakeVar",
                             "width": "200px",
                             "add": 0,
@@ -104,18 +104,18 @@
                 },
                 {
                     "type": "Label",
-                    "caption": "Von Hand hinzufügen: „Hinzufügen“ und die IP-Adresse eintragen. Mit Haken bei „Eigenes PW“ gilt das Passwort der Zeile statt des Master-Passworts. Haken bei „Batterie“: Das Gerät schläft meist und wird dann als „Schläft“ statt als Fehler gezeigt. Wach-Signal (nur Batteriegeräte): eine Variable, die beim Aufwachen des Geräts neu geschrieben wird, z. B. die Temperatur aus dem Shelly-Modul – dann fragt das Modul das Gerät sofort ab und startet ein vorgemerktes Update. Ob ein Passwort stimmt, zeigt die Übersicht unten nach „Änderungen übernehmen“."
+                    "caption": "Add by hand: press \"Add\" and enter the IP address. With a tick at \"Own PW\" the password of the row is used instead of the master password. Tick at \"Battery\": the device is mostly asleep and is then shown as \"Sleeping\" instead of as an error. Wake signal (battery devices only): a variable that is written whenever the device wakes up, e.g. the temperature from the Shelly module – the module then queries the device right away and starts a scheduled update. Whether a password is correct is shown in the overview below after \"Apply changes\"."
                 },
                 {
                     "type": "List",
                     "name": "ScanRanges",
-                    "caption": "Adressbereiche durchsuchen (andere Netze – oder das eigene, falls die Suche nicht alle findet)",
+                    "caption": "Search address ranges (other networks – or your own, if the search does not find all devices)",
                     "rowCount": 4,
                     "add": true,
                     "delete": true,
                     "columns": [
                         {
-                            "caption": "Von (erste IP-Adresse)",
+                            "caption": "From (first IP address)",
                             "name": "From",
                             "width": "220px",
                             "add": "",
@@ -124,7 +124,7 @@
                             }
                         },
                         {
-                            "caption": "Bis (letzte IP-Adresse)",
+                            "caption": "To (last IP address)",
                             "name": "To",
                             "width": "220px",
                             "add": "",
@@ -133,7 +133,7 @@
                             }
                         },
                         {
-                            "caption": "Bezeichnung",
+                            "caption": "Label",
                             "name": "Label",
                             "width": "auto",
                             "add": "",
@@ -145,20 +145,20 @@
                 },
                 {
                     "type": "Label",
-                    "caption": "Für Shellys in einem anderen Netz als Symcon (z. B. Gäste- oder IoT-Netz) – oder für das eigene Netz, wenn die normale Suche nicht alle Geräte findet: Dann wird jede Adresse direkt gefragt. Beispiel: Von 192.168.20.1, Bis 192.168.20.254. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht. Höchstens 1024 Adressen je Zeile. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“."
+                    "caption": "For Shellys in a different network than Symcon (e.g. guest or IoT network) – or for your own network if the normal search does not find all devices: then every address is asked directly. Example: From 192.168.20.1, To 192.168.20.254. If \"To\" is left empty, the whole network of the address is searched. At most 1024 addresses per row. Searching only happens with the button \"Search devices on the network\"."
                 }
             ]
         },
         {
             "type": "ExpansionPanel",
             "name": "PanelSettings",
-            "caption": "Prüfung, Nachricht und Anzeige",
+            "caption": "Check, notification and display",
             "expanded": false,
             "items": [
                 {
                     "type": "NumberSpinner",
                     "name": "CheckInterval",
-                    "caption": "Automatisch prüfen alle (Stunden, 0 = aus)",
+                    "caption": "Check automatically every (hours, 0 = off)",
                     "minimum": 0,
                     "maximum": 720,
                     "width": "340px"
@@ -166,13 +166,13 @@
                 {
                     "type": "SelectInstance",
                     "name": "NotifyVisu",
-                    "caption": "Push-Nachricht bei neuem Update an diese Kachel-Visualisierung (leer = keine Nachricht)",
+                    "caption": "Push message for a new update to this tile visualization (empty = no message)",
                     "width": "700px"
                 },
                 {
                     "type": "CheckBox",
                     "name": "ShowTable",
-                    "caption": "Variable „Übersicht“ (Tabelle für die Visualisierung) anlegen"
+                    "caption": "Create the variable \"Overview\" (table for the visualization)"
                 }
             ]
         },
@@ -185,24 +185,24 @@
                 {
                     "type": "CheckBox",
                     "name": "ContinueUpdates",
-                    "caption": "Nach einem hier gestarteten Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)"
+                    "caption": "After an update started here, continue right away until the latest version is installed (follow-up updates)"
                 },
                 {
                     "type": "CheckBox",
                     "name": "VisuCommands",
-                    "caption": "Bedienung aus der Visualisierung freigeben (Variable „Befehl“: Jetzt prüfen / Alle Updates starten)"
+                    "caption": "Enable control from the visualization (variable \"Command\": Check now / Start all updates)"
                 },
                 {
                     "type": "NumberSpinner",
                     "name": "UpdateGap",
-                    "caption": "Pause zwischen zwei Geräten bei mehreren Updates (Sekunden)",
+                    "caption": "Pause between two devices when updating several (seconds)",
                     "minimum": 5,
                     "maximum": 600,
                     "width": "440px"
                 },
                 {
                     "type": "Label",
-                    "caption": "Updates werden nie von selbst begonnen – nur über die Knöpfe unten oder per Skript. Ein begonnenes Update führt das Modul zu Ende."
+                    "caption": "Updates are never begun on their own – only via the buttons below or by script. Once begun, the module completes an update."
                 }
             ]
         }
@@ -213,25 +213,25 @@
             "items": [
                 {
                     "type": "Button",
-                    "caption": "Jetzt prüfen",
+                    "caption": "Check now",
                     "onClick": "SFW_CheckAll($id);"
                 },
                 {
                     "type": "Button",
-                    "caption": "Geräte im Netzwerk suchen",
+                    "caption": "Search devices on the network",
                     "onClick": "SFW_Discover($id);"
                 },
                 {
                     "type": "Button",
-                    "caption": "Ausgewählte aktualisieren",
+                    "caption": "Update selected",
                     "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_UpdateSelected($id, json_encode($h));",
-                    "confirm": "Updates für die Geräte mit Haken in der Spalte „Auswahl“ starten? Die Geräte starten dabei neu."
+                    "confirm": "Start updates for the devices ticked in the \"Select\" column? The devices will restart."
                 },
                 {
                     "type": "Button",
-                    "caption": "Alle Updates starten",
+                    "caption": "Start all updates",
                     "onClick": "SFW_UpdateAll($id);",
-                    "confirm": "Updates für alle Geräte mit verfügbarem Update nacheinander starten? Die Geräte starten dabei neu."
+                    "confirm": "Start updates one after another for all devices with an available update? The devices will restart."
                 }
             ]
         },
@@ -240,23 +240,23 @@
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Auto-Update im Gerät für die Ausgewählten:"
+                    "caption": "Auto update in the device for the selected ones:"
                 },
                 {
                     "type": "Button",
-                    "caption": "Aus",
+                    "caption": "Off",
                     "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'off');",
-                    "confirm": "Automatisches Firmware-Update in den ausgewählten Geräten ausschalten? Vorhandene Update-Zeitpläne in diesen Geräten werden entfernt."
+                    "confirm": "Switch off automatic firmware updates in the selected devices? Existing update schedules in these devices will be removed."
                 },
                 {
                     "type": "Button",
-                    "caption": "Stable (täglich 0 Uhr)",
+                    "caption": "Stable (daily at midnight)",
                     "onClick": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } SFW_SetAutoUpdate($id, json_encode($h), 'stable');",
-                    "confirm": "Automatisches Firmware-Update (stabile Version) in den ausgewählten Geräten einschalten? Die Geräte prüfen dann täglich um 0 Uhr selbst und starten bei einem Update neu."
+                    "confirm": "Switch on automatic firmware updates (stable version) in the selected devices? The devices will then check by themselves every day at midnight and restart when updating."
                 },
                 {
                     "type": "Button",
-                    "caption": "Test-Nachricht senden",
+                    "caption": "Send test message",
                     "onClick": "IPS_RequestAction($id, 'TestNotify', '');"
                 }
             ]
@@ -269,13 +269,13 @@
         {
             "type": "List",
             "name": "Status",
-            "caption": "Übersicht",
+            "caption": "Overview",
             "rowCount": 15,
             "add": false,
             "delete": false,
             "columns": [
                 {
-                    "caption": "Auswahl",
+                    "caption": "Select",
                     "name": "Select",
                     "width": "70px",
                     "add": false,
@@ -290,7 +290,7 @@
                     "add": ""
                 },
                 {
-                    "caption": "IP-Adresse",
+                    "caption": "IP address",
                     "name": "Host",
                     "width": "130px",
                     "add": "",
@@ -298,25 +298,25 @@
                     "link": true
                 },
                 {
-                    "caption": "Modell",
+                    "caption": "Model",
                     "name": "Model",
                     "width": "130px",
                     "add": ""
                 },
                 {
-                    "caption": "Installiert",
+                    "caption": "Installed",
                     "name": "Installed",
                     "width": "95px",
                     "add": ""
                 },
                 {
-                    "caption": "Verfügbar",
+                    "caption": "Available",
                     "name": "Available",
                     "width": "95px",
                     "add": ""
                 },
                 {
-                    "caption": "Auto-Update",
+                    "caption": "Auto update",
                     "name": "Auto",
                     "width": "105px",
                     "add": ""
@@ -333,12 +333,12 @@
         },
         {
             "type": "Label",
-            "caption": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts. Manche Updates laufen in mehreren Schritten und dauern dann einige Minuten."
+            "caption": "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device. Some updates run in several steps and then take a few minutes."
         },
         {
             "type": "ExpansionPanel",
             "name": "PanelHistory",
-            "caption": "Update-Verlauf",
+            "caption": "Update history",
             "expanded": false,
             "items": [
                 {
@@ -350,31 +350,31 @@
                     "delete": false,
                     "columns": [
                         {
-                            "caption": "Zeitpunkt",
+                            "caption": "Time",
                             "name": "Time",
                             "width": "170px",
                             "add": ""
                         },
                         {
-                            "caption": "Gerät",
+                            "caption": "Device",
                             "name": "Name",
                             "width": "auto",
                             "add": ""
                         },
                         {
-                            "caption": "Von",
+                            "caption": "From",
                             "name": "From",
                             "width": "140px",
                             "add": ""
                         },
                         {
-                            "caption": "Auf",
+                            "caption": "To",
                             "name": "To",
                             "width": "140px",
                             "add": ""
                         },
                         {
-                            "caption": "Ausgelöst durch",
+                            "caption": "Triggered by",
                             "name": "By",
                             "width": "240px",
                             "add": ""
@@ -384,7 +384,7 @@
                 },
                 {
                     "type": "Label",
-                    "caption": "Die letzten 50 Versionswechsel, neueste zuerst. „nicht über das Modul“ heißt: Auto-Update des Geräts, Weboberfläche, App oder Shelly selbst."
+                    "caption": "The last 50 version changes, newest first. \"not via the module\" means: auto update of the device, web interface, app or Shelly itself."
                 }
             ]
         },

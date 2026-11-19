@@ -54,20 +54,20 @@ class ShellyFWCheck extends IPSModule
         }
 
         $plain = ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION];
-        $this->RegisterVariableInteger('UpdatesAvailable', $this->Translate('Updates verfügbar'), $plain, 10);
-        $this->RegisterVariableInteger('DevicesTotal', $this->Translate('Geräte'), $plain, 20);
-        $this->RegisterVariableInteger('DevicesOffline', $this->Translate('Nicht erreichbar'), $plain, 30);
-        $this->RegisterVariableString('UpdateNames', $this->Translate('Geräte mit Update'), $plain, 40);
-        $this->RegisterVariableString('LastCheck', $this->Translate('Letzte Prüfung'), $plain, 50);
-        $this->MaintainVariable('Table', $this->Translate('Übersicht'), VARIABLETYPE_STRING, '~HTMLBox', 60, $this->ReadPropertyBoolean('ShowTable'));
+        $this->RegisterVariableInteger('UpdatesAvailable', $this->Translate('Updates available'), $plain, 10);
+        $this->RegisterVariableInteger('DevicesTotal', $this->Translate('Devices'), $plain, 20);
+        $this->RegisterVariableInteger('DevicesOffline', $this->Translate('Not reachable'), $plain, 30);
+        $this->RegisterVariableString('UpdateNames', $this->Translate('Devices with update'), $plain, 40);
+        $this->RegisterVariableString('LastCheck', $this->Translate('Last check'), $plain, 50);
+        $this->MaintainVariable('Table', $this->Translate('Overview'), VARIABLETYPE_STRING, '~HTMLBox', 60, $this->ReadPropertyBoolean('ShowTable'));
 
         // Bedienung aus der Visualisierung – nur mit ausdrücklicher Freigabe im Formular
         // Aufzählung kennt je Option nur Value, Caption, IconActive, IconValue, Color – weitere Schlüssel lösen beim Übernehmen eine Warnung aus
         $option = static fn (int $value, string $caption): array => ['Value' => $value, 'Caption' => $caption, 'IconActive' => false, 'IconValue' => '', 'Color' => -1];
         $commands = $this->ReadPropertyBoolean('VisuCommands');
-        $this->MaintainVariable('Command', $this->Translate('Befehl'), VARIABLETYPE_INTEGER, [
+        $this->MaintainVariable('Command', $this->Translate('Command'), VARIABLETYPE_INTEGER, [
             'PRESENTATION' => VARIABLE_PRESENTATION_ENUMERATION,
-            'OPTIONS'      => json_encode([$option(1, $this->Translate('Jetzt prüfen')), $option(2, $this->Translate('Alle Updates starten'))])
+            'OPTIONS'      => json_encode([$option(1, $this->Translate('Check now')), $option(2, $this->Translate('Start all updates'))])
         ], 5, $commands);
         if ($commands) {
             $this->EnableAction('Command');
@@ -246,7 +246,7 @@ class ShellyFWCheck extends IPSModule
             case 'Command':
                 // Variable „Befehl“ aus der Visualisierung; bleibt auf dem letzten Befehl stehen
                 if (!$this->ReadPropertyBoolean('VisuCommands')) {
-                    throw new Exception($this->T('Die Bedienung aus der Visualisierung ist im Formular nicht freigegeben.'));
+                    throw new Exception($this->T('Control from the visualization is not enabled in the form.'));
                 }
                 $this->SetValue('Command', (int) $Value);
                 if ((int) $Value === 1) {
@@ -256,16 +256,16 @@ class ShellyFWCheck extends IPSModule
                 }
                 break;
             case 'TestNotify':
-                $ok = $this->Notify($this->T('Shelly-Firmware'), $this->T('Test: So sieht die Meldung bei einem neuen Update aus.'));
-                $this->ShowResult($ok ? $this->T('Test-Nachricht gesendet.') : ($this->ReadPropertyInteger('NotifyVisu') < 10000
-                    ? $this->T('Keine Visualisierung ausgewählt (unter „Prüfung, Nachricht und Anzeige“) – erst auswählen und übernehmen.')
-                    : $this->T('Test-Nachricht konnte nicht gesendet werden – ist eine Kachel-Visualisierung ausgewählt? Details im Meldungsfenster.')));
+                $ok = $this->Notify($this->T('Shelly firmware'), $this->T('Test: this is what the message for a new update looks like.'));
+                $this->ShowResult($ok ? $this->T('Test message sent.') : ($this->ReadPropertyInteger('NotifyVisu') < 10000
+                    ? $this->T('No visualization selected (under "Check, notification and display") – select one and apply first.')
+                    : $this->T('The test message could not be sent – is a tile visualization selected? See the message log for details.')));
                 break;
             case 'Discover':
                 $this->Discover();
                 break;
             default:
-                throw new Exception('Ungültiger Ident: ' . $Ident);
+                throw new Exception('Invalid ident: ' . $Ident);
         }
     }
 
@@ -278,13 +278,13 @@ class ShellyFWCheck extends IPSModule
             'Overview'      => ['caption' => $this->OverviewText()],
             'Devices'       => ['values' => $this->ConfigRows($rows)],
             'History'       => ['values' => $this->HistoryRows()],
-            'PanelHistory'  => ['caption' => $this->T('Update-Verlauf (%d)', count($this->HistoryRows()))],
+            'PanelHistory'  => ['caption' => $this->T('Update history (%d)', count($this->HistoryRows()))],
             'Status'        => ['values' => $this->StatusRows($rows)],
-            'PanelDevices'  => ['caption' => $this->T('Geräte verwalten (%d)', count($rows)), 'expanded' => count($rows) === 0],
-            'PanelSettings' => ['caption' => $this->T('Prüfung, Nachricht und Anzeige (%s)', $this->SettingsSummary())],
-            'PanelUpdates'  => ['caption' => $this->ReadPropertyBoolean('ContinueUpdates') ? $this->T('Updates (Folge-Updates an)') : $this->T('Updates (Folge-Updates aus)')],
+            'PanelDevices'  => ['caption' => $this->T('Manage devices (%d)', count($rows)), 'expanded' => count($rows) === 0],
+            'PanelSettings' => ['caption' => $this->T('Check, notification and display (%s)', $this->SettingsSummary())],
+            'PanelUpdates'  => ['caption' => $this->ReadPropertyBoolean('ContinueUpdates') ? $this->T('Updates (follow-up updates on)') : $this->T('Updates (follow-up updates off)')],
             'PanelPassword' => ['expanded' => $noSetup,
-                'caption' => $this->ReadPropertyString('MasterPassword') !== '' ? $this->T('Passwort (Master-Passwort hinterlegt)') : $this->T('Passwort')],
+                'caption' => $this->ReadPropertyString('MasterPassword') !== '' ? $this->T('Password (master password set)') : $this->T('Password')],
             'BuildInfo'     => ['caption' => $this->BuildText()]
         ];
         $this->FillForm($form['elements'], $fill);
@@ -299,7 +299,7 @@ class ShellyFWCheck extends IPSModule
             return '';
         }
         $lib = IPS_GetLibrary(self::LIBRARY_ID);
-        return $this->T('Shelly Firmware-Check %s (Build %d)', (string) ($lib['Version'] ?? ''), (int) ($lib['Build'] ?? 0));
+        return $this->T('Shelly Firmware Check %s (build %d)', (string) ($lib['Version'] ?? ''), (int) ($lib['Build'] ?? 0));
     }
 
     // ------------------------------------------------------------ öffentlich
@@ -319,7 +319,7 @@ class ShellyFWCheck extends IPSModule
         $key = 'ShellyFWCheck' . $this->InstanceID . '_Check';
         if (!IPS_SemaphoreEnter($key, $wait)) {
             if (!$quiet) {
-                $this->ShowResult($this->T('Abfrage läuft bereits …'));
+                $this->ShowResult($this->T('A check is already running …'));
             }
             return false;
         }
@@ -329,7 +329,7 @@ class ShellyFWCheck extends IPSModule
                 $rows = array_values(array_filter($rows, fn (array $r): bool => in_array($this->HostKey($r['Host']), $only, true)));
             }
             if (!$quiet) {
-                $this->ShowResult($this->T('Abfrage läuft … (%d Geräte, kann bis zu einer halben Minute dauern)', count($rows)));
+                $this->ShowResult($this->T('Checking … (%d devices, may take up to half a minute)', count($rows)));
             }
             $state = $this->ReadState();
             $orig = $state;   // Stand beim Start – beim Speichern mit inzwischen gestarteten Updates zusammenführen
@@ -387,7 +387,7 @@ class ShellyFWCheck extends IPSModule
                 if ($e['upd_start'] === 0 && $oldVer !== '' && $e['ver'] !== $oldVer) {
                     // Version hat sich geändert, ohne dass das Modul ein Update gestartet hat (Auto-Update, Weboberfläche, App)
                     $history[] = ['ts' => $now, 'name' => $e['name'], 'from' => $oldVer, 'to' => $e['ver'], 'by' => 'external'];
-                    $this->LogMessage($this->T('%s: Firmware wurde außerhalb des Moduls von %s auf %s geändert', $e['name'], $oldVer, $e['ver']), KL_NOTIFY);
+                    $this->LogMessage($this->T('%s: firmware was changed outside the module from %s to %s', $e['name'], $oldVer, $e['ver']), KL_NOTIFY);
                     $e['note'] = '';
                 }
                 if ($e['upd_start'] > 0) {
@@ -395,7 +395,7 @@ class ShellyFWCheck extends IPSModule
                     if ($e['ver'] !== $e['upd_from']) {
                         $history[] = ['ts' => $now, 'name' => $e['name'], 'from' => $e['upd_from'], 'to' => $e['ver'],
                             'by' => $e['upd_chain'] > 0 ? 'chain' : ($e['upd_ext'] ? 'external' : 'module')];
-                        $this->LogMessage($this->T('%s: Firmware aktualisiert von %s auf %s', $e['name'], $e['upd_from'], $e['ver']), KL_NOTIFY);
+                        $this->LogMessage($this->T('%s: firmware updated from %s to %s', $e['name'], $e['upd_from'], $e['ver']), KL_NOTIFY);
                         $e['upd_start'] = 0;
                         $e['avail'] = '';
                         $e['note'] = 'done|' . $e['upd_from'];
@@ -412,7 +412,7 @@ class ShellyFWCheck extends IPSModule
                             $again[$k] = $row;
                         }
                     } elseif ($now - $e['upd_start'] > ($row['Battery'] ? self::BATTERY_VERIFY_MAX : self::VERIFY_MAX)) {
-                        $this->LogMessage($this->T('%s: Update nicht bestätigt – Version ist weiter %s', $e['name'], $e['ver']), KL_WARNING);
+                        $this->LogMessage($this->T('%s: update not confirmed – version is still %s', $e['name'], $e['ver']), KL_WARNING);
                         $e['upd_start'] = 0;
                         $e['note'] = 'unconfirmed|' . $e['ver'];
                     }
@@ -474,7 +474,7 @@ class ShellyFWCheck extends IPSModule
                             'timeout' => 15, 'password' => $this->PasswordFor($hosts[$k]), 'auth' => $e['auth']];
                     } else {
                         $e['pending'] = false;   // nichts zu tun: Gerät ist aktuell
-                        $this->LogMessage($this->T('%s: Batteriegerät ist wach – kein Update verfügbar, Vormerkung erledigt', $e['name']), KL_NOTIFY);
+                        $this->LogMessage($this->T('%s: battery device is awake – no update available, scheduled update cleared', $e['name']), KL_NOTIFY);
                     }
                 }
                 $state[$k] = $e;
@@ -485,7 +485,7 @@ class ShellyFWCheck extends IPSModule
                 if ($res['ok'] || $this->Busy($res)) {
                     $e = $this->MarkStarted($e, $now);
                     unset($found[$k]);
-                    $this->LogMessage($this->T('%s: Batteriegerät ist wach – vorgemerktes Update gestartet', $e['name']), KL_NOTIFY);
+                    $this->LogMessage($this->T('%s: battery device is awake – scheduled update started', $e['name']), KL_NOTIFY);
                     $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
                 } else {
                     if ($res['err'] === 'offline') {
@@ -493,7 +493,7 @@ class ShellyFWCheck extends IPSModule
                         $e['err'] = 'sleep';
                     }
                     // bleibt vorgemerkt und wird beim nächsten Aufwachen erneut versucht
-                    $this->LogMessage($this->T('%s: vorgemerktes Update nicht gestartet – %s', $e['name'], $this->ErrorText($res)), KL_WARNING);
+                    $this->LogMessage($this->T('%s: scheduled update not started – %s', $e['name'], $this->ErrorText($res)), KL_WARNING);
                 }
                 $state[$k] = $e;
             }
@@ -522,7 +522,7 @@ class ShellyFWCheck extends IPSModule
                     $e['upd_start'] = $now;
                     $e['upd_slot'] = $e['slot'];
                     $e['upd_step'] = 0;
-                    $this->LogMessage($this->T('%s: Zwischenschritt erledigt (weiter %s) – Update auf %s erneut angestoßen (Schritt %d)',
+                    $this->LogMessage($this->T('%s: intermediate step done (still %s) – update to %s triggered again (step %d)',
                         $e['name'], $e['ver'], $e['upd_target'], $e['upd_tries']), KL_NOTIFY);
                 } elseif ($this->Busy($res) || $this->Settling($res)) {
                     // Das Gerät macht von selbst weiter bzw. bestätigt gerade die neue Firmware (z. B. Shelly 2.2.0 in zwei Schritten auf dem Plug S Gen3,
@@ -578,13 +578,13 @@ class ShellyFWCheck extends IPSModule
                         $e = $this->MarkStarted($e, $now);
                         $e['upd_chain'] = $chain;
                         unset($found[$k]);   // läuft von selbst weiter – keine Benachrichtigung nötig
-                        $this->LogMessage($this->T('%s: Folge-Update von %s auf %s gestartet', $e['name'], $e['ver'], $e['avail']), KL_NOTIFY);
+                        $this->LogMessage($this->T('%s: follow-up update from %s to %s started', $e['name'], $e['ver'], $e['avail']), KL_NOTIFY);
                     } elseif ($this->Settling($res)) {
                         // „Not committed“: Das Gerät bestätigt die eben installierte Firmware noch – im Folge-Update-Fenster
                         // nächste Runde einfach erneut versuchen (Mini Gen4, Forum power1625). Keine Warnung.
                         $this->SendDebug('Update', $e['name'] . ': Folge-Update wartet, bis das Gerät die neue Firmware bestätigt hat', 0);
                     } else {
-                        $this->LogMessage($this->T('%s: Folge-Update auf %s nicht gestartet – %s', $e['name'], $e['avail'], $this->ErrorText($res)), KL_WARNING);
+                        $this->LogMessage($this->T('%s: follow-up update to %s not started – %s', $e['name'], $e['avail'], $this->ErrorText($res)), KL_WARNING);
                     }
                     $state[$k] = $e;
                 }
@@ -601,16 +601,16 @@ class ShellyFWCheck extends IPSModule
             $this->PublishValues();
             $this->RefreshForm();
             if (count($found) > 0) {
-                $this->Notify($this->T('Shelly-Firmware'), count($found) === 1 ? $this->T('Update verfügbar: %s', implode(', ', $found)) : $this->T('%d Updates verfügbar: %s', count($found), implode(', ', $found)));
+                $this->Notify($this->T('Shelly firmware'), count($found) === 1 ? $this->T('Update available: %s', implode(', ', $found)) : $this->T('%d updates available: %s', count($found), implode(', ', $found)));
             }
             if ($quiet) {
                 return true;
             }
             $c = $this->Counts();
-            $this->ShowResult($this->T('Abfrage fertig: %d Geräte geprüft', $c['total']) . ', '
-                . ($c['updates'] > 0 ? $this->T('%d mit Update', $c['updates']) : $this->T('kein Update verfügbar'))
-                . ($c['running'] > 0 ? ', ' . $this->T('%d Update(s) laufen', $c['running']) : '')
-                . ($c['offline'] > 0 ? ', ' . $this->T('%d nicht erreichbar', $c['offline']) : '') . '.');
+            $this->ShowResult($this->T('Check finished: %d devices checked', $c['total']) . ', '
+                . ($c['updates'] > 0 ? $this->T('%d with update', $c['updates']) : $this->T('no update available'))
+                . ($c['running'] > 0 ? ', ' . $this->T('%d update(s) running', $c['running']) : '')
+                . ($c['offline'] > 0 ? ', ' . $this->T('%d not reachable', $c['offline']) : '') . '.');
             return true;
         } finally {
             IPS_SemaphoreLeave($key);
@@ -624,7 +624,7 @@ class ShellyFWCheck extends IPSModule
             $avail = '';
         }
         if ($avail !== '' && $e['avail'] !== $avail) {
-            $this->LogMessage($this->T('%s: Firmware %s verfügbar (installiert %s)', $e['name'], $avail, $e['ver']), KL_NOTIFY);
+            $this->LogMessage($this->T('%s: firmware %s available (installed %s)', $e['name'], $avail, $e['ver']), KL_NOTIFY);
             if (!$this->NoteIsDone($e['note'])) {
                 $e['note'] = '';
             }
@@ -675,7 +675,7 @@ class ShellyFWCheck extends IPSModule
     {
         $Host = $this->CleanHost($Host);
         if ($Host === '') {
-            $this->ShowResult($this->T('Kein Gerät angegeben.'));
+            $this->ShowResult($this->T('No device given.'));
             return false;
         }
         $ok = $this->StartUpdate($Host, $message);
@@ -695,7 +695,7 @@ class ShellyFWCheck extends IPSModule
     {
         $list = json_decode($Hosts, true);
         if (!is_array($list) || count($list) === 0) {
-            $this->ShowResult($this->T('Nichts ausgewählt – in der Übersicht in der Spalte „Auswahl“ Haken setzen.'));
+            $this->ShowResult($this->T('Nothing selected – tick the "Select" column in the overview.'));
             return 0;
         }
         return $this->QueueUpdates(array_map([$this, 'HostKey'], array_map('strval', $list)));
@@ -732,14 +732,14 @@ class ShellyFWCheck extends IPSModule
         }
         if (count($queue) === 0 && count($marked) > 0) {
             $this->ShowResult(count($marked) === 1 ? (string) $message
-                : $this->T('%d Batteriegeräte schlafen – ihre Updates sind vorgemerkt und starten beim nächsten Aufwachen.', count($marked)));
+                : $this->T('%d battery devices are sleeping – their updates are scheduled and start when they next wake up.', count($marked)));
             $this->RefreshForm();
             return count($marked);
         }
         if (count($queue) === 0) {
             $this->ShowResult($only === null
-                ? $this->T('Kein Gerät mit verfügbarem Update – ggf. erst „Jetzt prüfen“.')
-                : $this->T('Für die ausgewählten Geräte ist kein Update verfügbar (oder es läuft schon).'));
+                ? $this->T('No device with an available update – press "Check now" first if needed.')
+                : $this->T('No update is available for the selected devices (or it is already running).'));
             return 0;
         }
         $count = count($queue) + count($marked);
@@ -753,8 +753,8 @@ class ShellyFWCheck extends IPSModule
             $this->WorkQueue();
         }
         $this->ShowResult($count === 1
-            ? $this->T('1 Update gestartet. Der Status in der Übersicht zeigt den Fortschritt.')
-            : $this->T('%d Updates eingeplant – ein Gerät alle %d Sekunden. Der Status in der Übersicht zeigt den Fortschritt.', $count, $gap));
+            ? $this->T('1 update started. The status in the overview shows the progress.')
+            : $this->T('%d updates scheduled – one device every %d seconds. The status in the overview shows the progress.', $count, $gap));
         return $count;
     }
 
@@ -779,10 +779,10 @@ class ShellyFWCheck extends IPSModule
         foreach ($ranges as $r) {
             $addresses += $r[1] - $r[0] + 1;
         }
-        $this->ShowResult(count($ranges) > 0 ? $this->T('Suche läuft … (eigenes Netz und %d weitere Bereiche mit %d Adressen)', count($ranges), $addresses) : $this->T('Suche läuft … (eigenes Netz)'));
+        $this->ShowResult(count($ranges) > 0 ? $this->T('Searching … (own network and %d further ranges with %d addresses)', count($ranges), $addresses) : $this->T('Searching … (own network)'));
         $mdns = $this->QueryMdns();
         if ($mdns === null && count($ranges) === 0) {
-            $this->ShowResult($this->T('Die Suche im eigenen Netz braucht die Symcon-Instanz „DNS-SD Control“ – sie wurde nicht gefunden. Geräte bitte von Hand eintragen oder unter „Geräte verwalten“ einen Adressbereich angeben.')
+            $this->ShowResult($this->T('Searching the own network needs the Symcon instance "DNS-SD Control" – it was not found. Please add devices by hand or enter an address range under "Manage devices".')
                 . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
             return 0;
         }
@@ -833,17 +833,17 @@ class ShellyFWCheck extends IPSModule
         if ($new + $moved > 0) {
             $this->UpdateFormField('Devices', 'values', json_encode($list));
             $this->UpdateFormField('PanelDevices', 'expanded', true);
-            $text = $this->T('%d Shelly(s) im Netzwerk gefunden: %d neu', count($devices), $new) . ($moved > 0 ? ', ' . $this->T('%d mit neuer IP-Adresse', $moved) : '')
-                . ' – ' . $this->T('oben unter „Geräte verwalten“ blau markiert. Jetzt „Änderungen übernehmen“ drücken.');
+            $text = $this->T('%d Shelly(s) found on the network: %d new', count($devices), $new) . ($moved > 0 ? ', ' . $this->T('%d with a new IP address', $moved) : '')
+                . ' – ' . $this->T('marked blue under "Manage devices" above. Now press "Apply changes".');
         } else {
-            $text = $this->T('%d Shelly(s) im Netzwerk gefunden – alle stehen schon in der Liste.', count($devices));
+            $text = $this->T('%d Shelly(s) found on the network – all of them are already in the list.', count($devices));
         }
         if ($gen1 > 0) {
-            $text .= ' ' . $this->T('%d Gen1-Gerät(e) ausgelassen.', $gen1);
+            $text .= ' ' . $this->T('%d Gen1 device(s) skipped.', $gen1);
         }
         if (count($ranges) === 0) {
             // Netzwerksuche findet nicht immer alle (Schlafende, Geräte mit abgeschalteter Suche, Cache von Symcon)
-            $text .= ' ' . $this->T('Fehlt ein Gerät? Unter „Geräte verwalten“ das eigene Netz als Adressbereich eintragen – dann wird jede Adresse direkt gefragt.');
+            $text .= ' ' . $this->T('A device is missing? Enter your own network as an address range under "Manage devices" – then every address is asked directly.');
         }
         $this->ShowResult($text . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
         return $new;
@@ -890,11 +890,11 @@ class ShellyFWCheck extends IPSModule
                 }
             }
             if ($first === false || $last === false || $last < $first) {
-                $errors .= $this->T('Bereich „%s“ ist keine gültige Angabe und wurde ausgelassen.', $from . ($to !== '' ? ' – ' . $to : '')) . ' ';
+                $errors .= $this->T('Range "%s" is not a valid entry and was skipped.', $from . ($to !== '' ? ' – ' . $to : '')) . ' ';
                 continue;
             }
             if ($last - $first + 1 > self::SCAN_MAX) {
-                $errors .= $this->T('Bereich „%s“ ist größer als %d Adressen und wurde ausgelassen.', $from . ($to !== '' ? ' – ' . $to : ''), self::SCAN_MAX) . ' ';
+                $errors .= $this->T('Range "%s" is larger than %d addresses and was skipped.', $from . ($to !== '' ? ' – ' . $to : ''), self::SCAN_MAX) . ' ';
                 continue;
             }
             $out[] = [$first, $last];
@@ -955,13 +955,13 @@ class ShellyFWCheck extends IPSModule
         $history = array_merge($entries, is_array($history) ? $history : []);   // neueste zuerst
         $this->WriteAttributeString('History', json_encode(array_slice($history, 0, self::HISTORY_MAX)));
         $this->UpdateFormField('History', 'values', json_encode($this->HistoryRows()));
-        $this->UpdateFormField('PanelHistory', 'caption', $this->T('Update-Verlauf (%d)', count($this->HistoryRows())));
+        $this->UpdateFormField('PanelHistory', 'caption', $this->T('Update history (%d)', count($this->HistoryRows())));
     }
 
     private function HistoryRows(): array
     {
         $history = json_decode($this->ReadAttributeString('History'), true);
-        $by = ['module' => $this->T('Modul'), 'chain' => $this->T('Modul (Folge-Update)'), 'external' => $this->T('nicht über das Modul')];
+        $by = ['module' => $this->T('Module'), 'chain' => $this->T('Module (follow-up update)'), 'external' => $this->T('not via the module')];
         $rows = [];
         foreach (is_array($history) ? $history : [] as $h) {
             $rows[] = ['Time' => date('d.m.Y H:i', (int) ($h['ts'] ?? 0)), 'Name' => (string) ($h['name'] ?? ''),
@@ -1037,7 +1037,7 @@ class ShellyFWCheck extends IPSModule
 
     private function AutoText(array $e): string
     {
-        $labels = ['off' => $this->T('Aus'), 'stable' => 'Stable', 'beta' => 'Beta'];
+        $labels = ['off' => $this->T('Off'), 'stable' => 'Stable', 'beta' => 'Beta'];
         return $labels[$e['auto']] ?? '';
     }
 
@@ -1050,20 +1050,20 @@ class ShellyFWCheck extends IPSModule
         $Mode = strtolower($Mode);
         $list = json_decode($Hosts, true);
         if (!in_array($Mode, ['off', 'stable', 'beta'], true)) {
-            $this->ShowResult($this->T('Auto-Update: unbekannte Einstellung „%s“.', $Mode));
+            $this->ShowResult($this->T('Auto update: unknown setting "%s".', $Mode));
             return 0;
         }
         if (!is_array($list) || count($list) === 0) {
-            $this->ShowResult($this->T('Nichts ausgewählt – in der Übersicht in der Spalte „Auswahl“ Haken setzen.'));
+            $this->ShowResult($this->T('Nothing selected – tick the "Select" column in the overview.'));
             return 0;
         }
         $key = 'ShellyFWCheck' . $this->InstanceID . '_Check';
         if (!IPS_SemaphoreEnter($key, 60000)) {
-            $this->ShowResult($this->T('Gerade läuft eine Abfrage – bitte gleich noch einmal versuchen.'));
+            $this->ShowResult($this->T('A check is running right now – please try again in a moment.'));
             return 0;
         }
         try {
-            $this->ShowResult($this->T('Auto-Update wird umgestellt …'));
+            $this->ShowResult($this->T('Changing auto update …'));
             $only = array_map([$this, 'HostKey'], array_map('strval', $list));
             $state = $this->ReadState();
             $orig = $state;
@@ -1075,7 +1075,7 @@ class ShellyFWCheck extends IPSModule
                 }
             }
             if (count($base) === 0) {
-                $this->ShowResult($this->T('Keines der ausgewählten Geräte ist bekannt – ggf. erst „Jetzt prüfen“.'));
+                $this->ShowResult($this->T('None of the selected devices is known – press "Check now" first if needed.'));
                 return 0;
             }
             $failed = [];
@@ -1129,20 +1129,20 @@ class ShellyFWCheck extends IPSModule
                 $state[$k] = array_merge($state[$k], $this->ReadAutoUpdate($res));
                 if (!isset($failed[$k]) && $state[$k]['auto'] === $Mode) {
                     $done++;
-                    $this->LogMessage($this->T('%s: Auto-Update im Gerät auf „%s“ gestellt', $state[$k]['name'], $this->AutoText($state[$k])), KL_NOTIFY);
+                    $this->LogMessage($this->T('%s: auto update in the device set to "%s"', $state[$k]['name'], $this->AutoText($state[$k])), KL_NOTIFY);
                 } elseif (!isset($failed[$k])) {
-                    $failed[$k] = $this->T('Gerät meldet danach „%s“', $this->AutoText($state[$k]));
+                    $failed[$k] = $this->T('Device then reports "%s"', $this->AutoText($state[$k]));
                 }
             }
             $this->SaveState($orig, $state);
             $this->SetBuffer('Selected', '[]');
             $this->PublishValues();
             $this->RefreshForm();
-            $labels = ['off' => $this->T('Aus'), 'stable' => 'Stable', 'beta' => 'Beta'];
-            $text = $this->T('Auto-Update bei %d Gerät(en) auf „%s“ gestellt.', $done, $labels[$Mode]);
+            $labels = ['off' => $this->T('Off'), 'stable' => 'Stable', 'beta' => 'Beta'];
+            $text = $this->T('Auto update set to "%2$s" on %1$d device(s).', $done, $labels[$Mode]);
             foreach ($failed as $k => $why) {
-                $text .= ' ' . $this->T('Nicht geklappt: %s (%s).', $state[$k]['name'] ?? $k, $why);
-                $this->LogMessage($this->T('%s: Auto-Update nicht umgestellt – %s', $state[$k]['name'] ?? $k, $why), KL_WARNING);
+                $text .= ' ' . $this->T('Failed: %s (%s).', $state[$k]['name'] ?? $k, $why);
+                $this->LogMessage($this->T('%s: auto update not changed – %s', $state[$k]['name'] ?? $k, $why), KL_WARNING);
             }
             $this->ShowResult($text);
             return $done;
@@ -1174,8 +1174,8 @@ class ShellyFWCheck extends IPSModule
 
     private function ErrorText(array $res): string
     {
-        $map = ['offline' => $this->T('nicht erreichbar'), 'auth_missing' => $this->T('Passwort fehlt'), 'auth_wrong' => $this->T('Passwort falsch')];
-        return $map[$res['err']] ?? ($res['msg'] !== '' ? $res['msg'] : $this->T('Fehler'));
+        $map = ['offline' => $this->T('not reachable'), 'auth_missing' => $this->T('Password missing'), 'auth_wrong' => $this->T('Wrong password')];
+        return $map[$res['err']] ?? ($res['msg'] !== '' ? $res['msg'] : $this->T('Error'));
     }
 
     // ---------------------------------------------------------------- Updates
@@ -1194,15 +1194,15 @@ class ShellyFWCheck extends IPSModule
         $orig = $state;
         $e = $state[$k] ?? null;
         if ($row === null || $e === null) {
-            $message = $this->T('%s: Gerät ist nicht gespeichert oder wurde noch nicht geprüft.', $host);
+            $message = $this->T('%s: device is not saved or has not been checked yet.', $host);
             return false;
         }
         if ($e['upd_start'] > 0) {
-            $message = $this->T('%s: Update läuft bereits.', $e['name']);
+            $message = $this->T('%s: update is already running.', $e['name']);
             return false;
         }
         if ($e['pending']) {
-            $message = $this->T('%s: Update ist schon vorgemerkt und startet beim nächsten Aufwachen.', $e['name']);
+            $message = $this->T('%s: update is already scheduled and starts when the device next wakes up.', $e['name']);
             return true;
         }
         if ($e['avail'] === '' && $row['Battery'] && $e['err'] === 'sleep') {
@@ -1210,12 +1210,12 @@ class ShellyFWCheck extends IPSModule
             $e['pending'] = true;
             $state[$k] = $e;
             $this->SaveState($orig, $state);
-            $message = $this->T('%s: Batteriegerät schläft – beim nächsten Aufwachen wird nach einem Update gesehen und es gleich gestartet.', $e['name'] !== '' ? $e['name'] : $row['Host']);
+            $message = $this->T('%s: battery device is sleeping – when it next wakes up, the module looks for an update and starts it right away.', $e['name'] !== '' ? $e['name'] : $row['Host']);
             $this->LogMessage($message, KL_NOTIFY);
             return true;
         }
         if ($e['avail'] === '') {
-            $message = $this->T('%s: kein Update bekannt – ggf. erst „Jetzt prüfen“.', $e['name']);
+            $message = $this->T('%s: no update known – press "Check now" first if needed.', $e['name']);
             return false;
         }
         $res = ['ok' => false, 'err' => 'offline', 'msg' => ''];
@@ -1230,12 +1230,12 @@ class ShellyFWCheck extends IPSModule
             $e['err'] = 'sleep';
             $state[$k] = $e;
             $this->SaveState($orig, $state);
-            $message = $this->T('%s: Batteriegerät schläft – Update auf %s ist vorgemerkt und startet beim nächsten Aufwachen.', $e['name'], $e['avail']);
+            $message = $this->T('%s: battery device is sleeping – update to %s is scheduled and starts when it next wakes up.', $e['name'], $e['avail']);
             $this->LogMessage($message, KL_NOTIFY);
             return true;
         }
         if ($this->Settling($res)) {
-            $message = $this->T('%s: Das Gerät schließt das letzte Update noch ab – bitte in ein bis zwei Minuten erneut starten.', $e['name']);
+            $message = $this->T('%s: the device is still finishing the last update – please start again in a minute or two.', $e['name']);
             $this->LogMessage($message, KL_NOTIFY);
             return false;
         }
@@ -1244,7 +1244,7 @@ class ShellyFWCheck extends IPSModule
             $e['msg'] = $res['msg'];
             $state[$k] = $e;
             $this->SaveState($orig, $state);
-            $message = $this->T('%s: Update nicht gestartet – %s', $e['name'], $this->StateText($e));
+            $message = $this->T('%s: update not started – %s', $e['name'], $this->StateText($e));
             $this->LogMessage($message, KL_WARNING);
             return false;
         }
@@ -1254,8 +1254,8 @@ class ShellyFWCheck extends IPSModule
         $state[$k] = $e;
         $this->SaveState($orig, $state);
         $this->SetTimerInterval('Verify', self::VERIFY_SECONDS * 1000);
-        $message = $busy ? $this->T('%s: Update läuft bereits im Gerät – das Modul überwacht es.', $e['name'])
-            : $this->T('%s: Update auf %s gestartet. Das Gerät startet gleich neu.', $e['name'], $e['avail']);
+        $message = $busy ? $this->T('%s: update is already running in the device – the module is monitoring it.', $e['name'])
+            : $this->T('%s: update to %s started. The device will restart shortly.', $e['name'], $e['avail']);
         $this->LogMessage($message, KL_NOTIFY);
         return true;
     }
@@ -1290,15 +1290,15 @@ class ShellyFWCheck extends IPSModule
         }
         try {
             if (!IPS_InstanceExists($visu) || !function_exists('VISU_PostNotification')) {
-                throw new Exception($this->T('gewählte Visualisierung nicht gefunden'));
+                throw new Exception($this->T('selected visualization not found'));
             }
             $result = @VISU_PostNotification($visu, mb_substr($title, 0, 32), $text, 'Info', 0);
             if ($result === false) {
-                throw new Exception($this->T('Visualisierung hat die Nachricht abgelehnt'));
+                throw new Exception($this->T('the visualization rejected the message'));
             }
             return true;
         } catch (Throwable $t) {
-            $this->LogMessage($this->T('Benachrichtigung nicht gesendet: %s', $t->getMessage()), KL_WARNING);
+            $this->LogMessage($this->T('Notification not sent: %s', $t->getMessage()), KL_WARNING);
             return false;
         }
     }
@@ -1444,7 +1444,7 @@ class ShellyFWCheck extends IPSModule
         }
         $header = $this->DigestHeader($challenge, $password);
         if ($header === '') {
-            return ['header' => '', 'err' => 'rpc', 'msg' => $this->T('Anmeldung: unbekanntes Verfahren')];
+            return ['header' => '', 'err' => 'rpc', 'msg' => $this->T('Login: unknown method')];
         }
         return ['header' => $header, 'err' => '', 'msg' => ''];
     }
@@ -1695,13 +1695,13 @@ class ShellyFWCheck extends IPSModule
         [$code, $arg] = array_pad(explode('|', $note, 2), 2, '');
         switch ($code) {
             case 'done':
-                return $this->T('Aktualisiert (von %s)', $arg);
+                return $this->T('Updated (from %s)', $arg);
             case 'unconfirmed':
-                return $this->T('Nicht bestätigt – bitte erneut starten');
+                return $this->T('Not confirmed – please start again');
             case 'unreachable':
-                return $this->T('Nicht bestätigt – Gerät offline');
+                return $this->T('Not confirmed – device offline');
             case 'stepfail':
-                return $this->T('Nächster Schritt nicht gestartet') . ($arg !== '' ? ': ' . $arg : '');
+                return $this->T('Next step not started') . ($arg !== '' ? ': ' . $arg : '');
         }
         return $note;   // Merker aus Build 11 und älter stehen schon als Text da
     }
@@ -1717,57 +1717,57 @@ class ShellyFWCheck extends IPSModule
         if ($e['upd_start'] > 0) {
             $parts = [];
             if ($e['upd_chain'] > 0) {
-                $parts[] = $this->T('Folge-Update');
+                $parts[] = $this->T('Follow-up update');
             }
             if ($e['upd_tries'] > 1) {
-                $parts[] = $this->T('Schritt %d', $e['upd_tries']);
+                $parts[] = $this->T('Step %d', $e['upd_tries']);
             }
-            $parts[] = $this->T('seit %s', $this->When($e['upd_start']));
+            $parts[] = $this->T('since %s', $this->When($e['upd_start']));
             if ($e['battery'] && !$e['online']) {
-                $parts[] = $this->T('Bestätigung beim Aufwachen');
+                $parts[] = $this->T('confirmed on wake-up');
             }
-            return $this->T('Update läuft') . ' (' . implode(', ', $parts) . ')';
+            return $this->T('Update running') . ' (' . implode(', ', $parts) . ')';
         }
         if ($e['pending']) {
-            return $e['avail'] !== '' ? $this->T('Vorgemerkt – startet beim Aufwachen') : $this->T('Vorgemerkt – prüft beim Aufwachen');
+            return $e['avail'] !== '' ? $this->T('Scheduled – starts on wake-up') : $this->T('Scheduled – checks on wake-up');
         }
         if ($e['err'] === 'sleep' && $e['avail'] === '' && $this->NoteIsDone($e['note'])) {
-            return $this->NoteText($e['note']) . ', ' . $this->T('schläft');
+            return $this->NoteText($e['note']) . ', ' . $this->T('asleep');
         }
         if ($e['err'] === 'sleep' && $e['avail'] !== '') {
-            return $this->T('Schläft – Update verfügbar (wach %s)', $this->When($e['seen']));
+            return $this->T('Asleep – update available (awake %s)', $this->When($e['seen']));
         }
         switch ($e['err']) {
             case 'offline':
-                return $e['seen'] > 0 ? $this->T('Nicht erreichbar (zuletzt %s)', $this->When($e['seen'])) : $this->T('Nicht erreichbar');
+                return $e['seen'] > 0 ? $this->T('Not reachable (last seen %s)', $this->When($e['seen'])) : $this->T('Not reachable');
             case 'sleep':
-                return $e['seen'] > 0 ? $this->T('Schläft (wach %s)', $this->When($e['seen']))
-                    : $this->T('Schläft (noch nie wach)');
+                return $e['seen'] > 0 ? $this->T('Asleep (awake %s)', $this->When($e['seen']))
+                    : $this->T('Asleep (never awake yet)');
             case 'gen1':
-                return $this->T('Gen1 – nicht unterstützt');
+                return $this->T('Gen1 – not supported');
             case 'auth_missing':
-                return $this->T('Passwort fehlt');
+                return $this->T('Password missing');
             case 'auth_wrong':
-                return $this->T('Passwort falsch');
+                return $this->T('Wrong password');
             case 'rpc':
-                return $this->T('Fehler: %s', $e['msg']);
+                return $this->T('Error: %s', $e['msg']);
         }
         if ($e['checked'] === 0) {
-            return $this->T('Noch nicht geprüft');
+            return $this->T('Not checked yet');
         }
         if ($e['note'] !== '' && $e['avail'] === '') {
             return $this->NoteText($e['note']);
         }
         if ($e['battery'] && $e['avail'] === '' && !$e['sure']) {
-            return $this->T('Kein Update gemeldet (unsicher)');
+            return $this->T('No update reported (uncertain)');
         }
         if ($e['avail'] !== '') {
             if ($this->NoteIsDone($e['note'])) {
-                return $this->T('Weiteres Update verfügbar');
+                return $this->T('Another update available');
             }
-            return $e['note'] !== '' ? $this->NoteText($e['note']) : $this->T('Update verfügbar');
+            return $e['note'] !== '' ? $this->NoteText($e['note']) : $this->T('Update available');
         }
-        return $this->T('Aktuell');
+        return $this->T('Up to date');
     }
 
     /** 0 normal, 1 Update verfügbar, 2 Update läuft, 3 Fehler, 4 gerade aktualisiert */
@@ -1836,7 +1836,7 @@ class ShellyFWCheck extends IPSModule
         $this->SetBuffer('Selected', json_encode($ticked));
         if (count($cancelled) > 0) {
             $this->SaveState($orig, $state);
-            $text = $this->T('Vormerkung aufgehoben: %s', implode(', ', $cancelled));
+            $text = $this->T('Scheduled update cancelled: %s', implode(', ', $cancelled));
             $this->LogMessage($text, KL_NOTIFY);
             $this->ShowResult($text);
             $this->RefreshForm();
@@ -1907,29 +1907,29 @@ class ShellyFWCheck extends IPSModule
     {
         $c = $this->Counts();
         if ($c['total'] === 0) {
-            return $this->T('Noch keine Geräte – deshalb steht oben „Instanz ist inaktiv“. Unten „Geräte im Netzwerk suchen“ drücken (oder unter „Geräte verwalten“ von Hand hinzufügen), dann „Änderungen übernehmen“ – danach ist die Instanz aktiv.');
+            return $this->T('No devices yet – that is why "Instance is inactive" is shown above. Press "Search devices on the network" below (or add them by hand under "Manage devices"), then "Apply changes" – after that the instance is active.');
         }
         $last = $this->ReadAttributeInteger('LastCheck');
-        $parts = ['● ' . $this->T('%d Geräte', $c['total'])];
+        $parts = ['● ' . $this->T('%d devices', $c['total'])];
         if ($last === 0) {
-            return $parts[0] . '  ·  ' . $this->T('noch nicht geprüft – die erste Abfrage läuft gleich von selbst');
+            return $parts[0] . '  ·  ' . $this->T('not checked yet – the first check starts by itself in a moment');
         }
         $problems = $c['total'] - $c['updates'] - $c['running'] - $c['offline'] - $c['ok'] - $c['sleeping'];
-        $parts[] = $c['updates'] > 0 ? $this->T('%d mit Update', $c['updates'])
-            : ($c['ok'] + $c['sleeping'] === $c['total'] ? $this->T('alle aktuell') : $this->T('kein Update'));
+        $parts[] = $c['updates'] > 0 ? $this->T('%d with update', $c['updates'])
+            : ($c['ok'] + $c['sleeping'] === $c['total'] ? $this->T('all up to date') : $this->T('no update'));
         if ($problems > 0) {
-            $parts[] = $this->T('%d mit Fehler', $problems);
+            $parts[] = $this->T('%d with error', $problems);
         }
         if ($c['sleeping'] > 0) {
-            $parts[] = $this->T('%d schlafen', $c['sleeping']);
+            $parts[] = $this->T('%d sleeping', $c['sleeping']);
         }
         if ($c['running'] > 0) {
-            $parts[] = $this->T('%d Update(s) laufen', $c['running']);
+            $parts[] = $this->T('%d update(s) running', $c['running']);
         }
         if ($c['offline'] > 0) {
-            $parts[] = $this->T('%d nicht erreichbar', $c['offline']);
+            $parts[] = $this->T('%d not reachable', $c['offline']);
         }
-        $parts[] = $this->T('letzte Prüfung %s', date('d.m. H:i', $last));
+        $parts[] = $this->T('last check %s', date('d.m. H:i', $last));
         return implode('  ·  ', $parts);
     }
 
@@ -1963,7 +1963,7 @@ class ShellyFWCheck extends IPSModule
         $colors = [0 => '', 1 => '#E0A800', 2 => '#4A90D9', 3 => '#D9534F', 4 => '#3C9A3C'];
         $cell = 'padding:4px 10px;text-align:left;border-bottom:1px solid rgba(128,128,128,0.3);';
         $html = '<table style="width:100%;border-collapse:collapse;font-size:0.9em;"><tr>';
-        foreach ([$this->T('Gerät'), $this->T('Modell'), $this->T('Installiert'), $this->T('Verfügbar'), $this->T('Auto-Update'), $this->T('Status')] as $head) {
+        foreach ([$this->T('Device'), $this->T('Model'), $this->T('Installed'), $this->T('Available'), $this->T('Auto update'), $this->T('Status')] as $head) {
             $html .= '<th style="' . $cell . '">' . $head . '</th>';
         }
         $html .= '</tr>';
@@ -1994,8 +1994,8 @@ class ShellyFWCheck extends IPSModule
     private function SettingsSummary(): string
     {
         $hours = max(0, $this->ReadPropertyInteger('CheckInterval'));
-        $parts = [$hours === 0 ? $this->T('keine automatische Prüfung') : ($hours === 24 ? $this->T('täglich') : $this->T('alle %d Stunden', $hours))];
-        $parts[] = $this->ReadPropertyInteger('NotifyVisu') >= 10000 ? $this->T('Push-Nachricht an') : $this->T('Push-Nachricht aus');
+        $parts = [$hours === 0 ? $this->T('no automatic check') : ($hours === 24 ? $this->T('daily') : $this->T('every %d hours', $hours))];
+        $parts[] = $this->ReadPropertyInteger('NotifyVisu') >= 10000 ? $this->T('push message on') : $this->T('push message off');
         return implode(', ', $parts);
     }
 

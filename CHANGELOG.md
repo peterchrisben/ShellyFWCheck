@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 30 (19.11.2026)
+
+#### Geändert
+- Übersetzung so aufgebaut, wie Symcon es vorsieht (Hinweis von Dr. Niels im Forum): Texte im Modul und im Formular sind jetzt englisch, die deutschen Texte stehen in der Übersetzungsdatei. Für Nutzer ändert sich nichts – die Konsole zeigt das Modul in ihrer Sprache, Deutsch oder Englisch. Der Behelf aus Build 28 (deutscher Teil, der auf sich selbst zeigt) entfällt.
+
 ### Build 29 (19.11.2026)
 
 #### Behoben
