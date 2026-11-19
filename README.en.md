@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 27)
+Current version: 1.0 (Build 28)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 

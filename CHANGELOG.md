@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 28 (19.11.2026)
+
+#### Behoben
+- Sprachmix in der Web-Konsole (Browser): Knöpfe, Spaltenköpfe und einige Überschriften erschienen auf Englisch, der Rest auf Deutsch (Forum, norden und power1625). Die Übersetzungsdatei enthält jetzt auch einen deutschen Teil – eine deutsche Konsole findet ihre Sprache und weicht nicht mehr auf Englisch aus.
+
 ### Build 27 (18.11.2026)
 
 #### Behoben
