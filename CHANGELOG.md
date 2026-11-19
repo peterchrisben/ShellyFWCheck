@@ -2,6 +2,11 @@
 
 ## Version 1.0
 
+### Build 29 (19.11.2026)
+
+#### Behoben
+- Direkt nach einem Update lehnen manche Shellys das nächste kurz mit „Not committed“ ab – die neue Firmware ist noch nicht bestätigt (z. B. Mini Gen4). Das stand als Warnung im Meldungsfenster (Forum, power1625). Jetzt wartet das Modul ohne Warnung und startet das Folge-Update, sobald das Gerät bereit ist. Per Knopf gestartet, erscheint der Hinweis, es in ein bis zwei Minuten erneut zu versuchen.
+
 ### Build 28 (19.11.2026)
 
 #### Behoben

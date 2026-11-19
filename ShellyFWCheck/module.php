@@ -524,8 +524,8 @@ class ShellyFWCheck extends IPSModule
                     $e['upd_step'] = 0;
                     $this->LogMessage($this->T('%s: Zwischenschritt erledigt (weiter %s) – Update auf %s erneut angestoßen (Schritt %d)',
                         $e['name'], $e['ver'], $e['upd_target'], $e['upd_tries']), KL_NOTIFY);
-                } elseif ($this->Busy($res)) {
-                    // Das Gerät macht von selbst weiter (z. B. Shelly 2.2.0 in zwei Schritten auf dem Plug S Gen3,
+                } elseif ($this->Busy($res) || $this->Settling($res)) {
+                    // Das Gerät macht von selbst weiter bzw. bestätigt gerade die neue Firmware (z. B. Shelly 2.2.0 in zwei Schritten auf dem Plug S Gen3,
                     // Forum demel42) – kein Fehler: weiter auf die neue Version warten.
                     $e['upd_slot'] = $e['slot'];
                     $e['upd_step'] = 0;
@@ -579,6 +579,10 @@ class ShellyFWCheck extends IPSModule
                         $e['upd_chain'] = $chain;
                         unset($found[$k]);   // läuft von selbst weiter – keine Benachrichtigung nötig
                         $this->LogMessage($this->T('%s: Folge-Update von %s auf %s gestartet', $e['name'], $e['ver'], $e['avail']), KL_NOTIFY);
+                    } elseif ($this->Settling($res)) {
+                        // „Not committed“: Das Gerät bestätigt die eben installierte Firmware noch – im Folge-Update-Fenster
+                        // nächste Runde einfach erneut versuchen (Mini Gen4, Forum power1625). Keine Warnung.
+                        $this->SendDebug('Update', $e['name'] . ': Folge-Update wartet, bis das Gerät die neue Firmware bestätigt hat', 0);
                     } else {
                         $this->LogMessage($this->T('%s: Folge-Update auf %s nicht gestartet – %s', $e['name'], $e['avail'], $this->ErrorText($res)), KL_WARNING);
                     }
@@ -1162,6 +1166,12 @@ class ShellyFWCheck extends IPSModule
         return !$res['ok'] && stripos((string) ($res['msg'] ?? ''), 'in progress') !== false;
     }
 
+    /** Gerät meldet „Not committed“: die eben installierte Firmware ist noch nicht bestätigt – gleich noch mal versuchen. */
+    private function Settling(array $res): bool
+    {
+        return !$res['ok'] && stripos((string) ($res['msg'] ?? ''), 'not committed') !== false;
+    }
+
     private function ErrorText(array $res): string
     {
         $map = ['offline' => $this->T('nicht erreichbar'), 'auth_missing' => $this->T('Passwort fehlt'), 'auth_wrong' => $this->T('Passwort falsch')];
@@ -1223,6 +1233,11 @@ class ShellyFWCheck extends IPSModule
             $message = $this->T('%s: Batteriegerät schläft – Update auf %s ist vorgemerkt und startet beim nächsten Aufwachen.', $e['name'], $e['avail']);
             $this->LogMessage($message, KL_NOTIFY);
             return true;
+        }
+        if ($this->Settling($res)) {
+            $message = $this->T('%s: Das Gerät schließt das letzte Update noch ab – bitte in ein bis zwei Minuten erneut starten.', $e['name']);
+            $this->LogMessage($message, KL_NOTIFY);
+            return false;
         }
         if (!$res['ok'] && !$this->Busy($res)) {   // „Already in progress“: Gerät aktualisiert schon – dann eben überwachen
             $e['err'] = $res['err'];
