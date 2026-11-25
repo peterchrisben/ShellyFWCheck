@@ -2,6 +2,18 @@
 
 ## Version 1.0
 
+### Build 31 (25.11.2026)
+
+#### Neu
+- Die Suche fragt jetzt immer auch das eigene Netz von Symcon Adresse für Adresse ab (je `.1` bis `.254`, höchstens vier Netze, ohne virtuelle Adapter wie Docker oder VPN). Damit werden auch Shellys gefunden, die sich bei der Netzwerksuche (mDNS) nicht melden – betraf mehrere Plus 2PM (Forum, lueralba und demel42). Ein Adressbereich für das eigene Netz muss nicht mehr eingetragen werden; ist er schon eingetragen, wird nicht doppelt gesucht.
+- Zweiter Versuch mit mehr Geduld: Antwortet ein Gerät bei der Prüfung nicht, wird es in derselben Prüfung noch einmal gefragt (bis zu 12 Sekunden statt 5) – ebenso Geräte, die die Netzwerksuche meldet, die aber nicht gleich antworten. Batteriegeräte und Geräte mit laufendem Update sind ausgenommen (Forum, AKL: Plus 2PM zuerst „nicht erreichbar“).
+
+#### Behoben
+- Symcon 9.1 bricht lange Beschriftungen von Eingabefeldern um und legt sie über das Feld darüber. Drei Beschriftungen gekürzt (höchstens 38 Zeichen), die Erklärungen stehen jetzt als Hinweis darunter: „Automatisch prüfen alle (Stunden)“, „Push-Nachricht an Visualisierung“, „Pause zwischen Geräten (Sekunden)“. Einstellungen bleiben erhalten.
+
+#### Dokumentation
+- README: Suche im eigenen Netz beschrieben, Hinweis auf den Beta-Kanal entfernt (Modul ist seit 25.11.2026 im Stable-Kanal).
+
 ### Build 30 (19.11.2026)
 
 #### Geändert

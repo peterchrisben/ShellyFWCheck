@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 30)
+Current version: 1.0 (Build 31)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 
@@ -16,7 +16,7 @@ Current version: 1.0 (Build 30)
 
 ## Installation
 
-- **Module Store:** search for "Shelly Firmware Check" and install it. The module is currently in the **beta channel** – beta modules have to be allowed in the store settings.
+- **Module Store:** search for "Shelly Firmware Check" and install it.
 - **or Module Control:** Add → `https://github.com/peterchrisben/ShellyFWCheck`
 
 ## Setup
@@ -28,9 +28,9 @@ Current version: 1.0 (Build 30)
 
 As long as no device is entered, Symcon shows "Instance is inactive" – that is normal.
 
-**The search does not find all devices?** The network search (mDNS) is not always complete – e.g. for devices that do not announce themselves, or when Symcon caches old entries. Then enter your **own network** under "Manage devices" at "Search address ranges" (e.g. From `192.168.1.1`, To `254`). The module then asks every address directly and finds every Shelly of Gen2 and newer.
+**How the module searches:** it uses the network search (mDNS) and also asks Symcon's **own network** address by address (e.g. `192.168.1.1` to `192.168.1.254`). This also finds Shellys that do not announce themselves in the network search – this affects e.g. some Plus 2PM. It takes a few seconds. If a device reported by the network search does not answer right away (weak Wi-Fi), the module asks again with more patience.
 
-**Shellys in a different network** (guest or IoT network, garden shed): the normal search only finds devices in the network of Symcon. Under "Manage devices" you can enter additional address ranges at "Search address ranges", e.g. From `192.168.20.1`, To `192.168.20.254`. If "To" is left empty, the whole network of the address is searched; the short form `192.168.20.0/24` works as well. At most 1024 addresses per row. Symcon must be able to reach the other network. Searching only happens with the button "Search devices on the network".
+**Shellys in a different network** (guest or IoT network, garden shed): the search only finds devices in the network of Symcon. Under "Manage devices" you can enter additional address ranges at "Search further address ranges", e.g. From `192.168.20.1`, To `192.168.20.254`. If "To" is left empty, the whole network of the address is searched; the short form `192.168.20.0/24` works as well. At most 1024 addresses per row. Symcon must be able to reach the other network. Searching only happens with the button "Search devices on the network".
 
 **Battery devices** (e.g. Shelly H&T): tick "Battery" in the device list. The device is then shown as "Sleeping" instead of as an error and is not counted under "Not reachable". Battery devices are only awake for about two seconds. In that time the module asks them for an update (the H&T answers in less than a second). While a device is asleep, an update is also derived from devices of the same model: if another H&T already runs a newer version, it is shown as available.
 
@@ -47,7 +47,7 @@ If a device has a different password: under "Manage devices" tick **Own PW** in 
 | Button | What happens |
 |---|---|
 | Check now | queries all active devices |
-| Search devices on the network | searches for Shellys via mDNS (and in the additional address ranges); new devices and changed IP addresses are entered under "Manage devices" (effective after "Apply changes") |
+| Search devices on the network | searches for Shellys via mDNS, in the own network and in the further address ranges; new devices and changed IP addresses are entered under "Manage devices" (effective after "Apply changes") |
 | Update selected | starts the updates for all devices ticked in the "Select" column of the overview (only devices with an available update are started) |
 | Start all updates | starts all available updates one after another, with a pause in between (default 20 seconds) |
 
@@ -75,7 +75,7 @@ Status in the overview: Up to date · Update available (yellow) · Update runnin
 |---|---|
 | Updates available | number of devices with an update – e.g. as a trigger for a notification |
 | Devices | number of active devices |
-| Not reachable | number of devices that did not answer the last check |
+| Not reachable | number of devices that did not answer the last check (a device that does not answer the first time is asked again with more patience) |
 | Devices with update | names of the devices with an update, comma separated |
 | Last check | time of the last check |
 | Overview | table of all devices for the visualization (can be switched off) |

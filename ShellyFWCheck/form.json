@@ -109,7 +109,7 @@
                 {
                     "type": "List",
                     "name": "ScanRanges",
-                    "caption": "Search address ranges (other networks – or your own, if the search does not find all devices)",
+                    "caption": "Search further address ranges (other networks, e.g. guest or IoT network)",
                     "rowCount": 4,
                     "add": true,
                     "delete": true,
@@ -145,7 +145,7 @@
                 },
                 {
                     "type": "Label",
-                    "caption": "For Shellys in a different network than Symcon (e.g. guest or IoT network) – or for your own network if the normal search does not find all devices: then every address is asked directly. Example: From 192.168.20.1, To 192.168.20.254. If \"To\" is left empty, the whole network of the address is searched. At most 1024 addresses per row. Searching only happens with the button \"Search devices on the network\"."
+                    "caption": "Symcon's own network is always searched address by address. Enter ranges here only for Shellys in a different network (e.g. guest or IoT network). Example: From 192.168.20.1, To 192.168.20.254. If \"To\" is left empty, the whole network of the address is searched. At most 1024 addresses per row. Searching only happens with the button \"Search devices on the network\"."
                 }
             ]
         },
@@ -158,16 +158,24 @@
                 {
                     "type": "NumberSpinner",
                     "name": "CheckInterval",
-                    "caption": "Check automatically every (hours, 0 = off)",
+                    "caption": "Check automatically every (hours)",
                     "minimum": 0,
                     "maximum": 720,
                     "width": "340px"
                 },
                 {
+                    "type": "Label",
+                    "caption": "0 = no automatic check."
+                },
+                {
                     "type": "SelectInstance",
                     "name": "NotifyVisu",
-                    "caption": "Push message for a new update to this tile visualization (empty = no message)",
+                    "caption": "Push message to visualization",
                     "width": "700px"
+                },
+                {
+                    "type": "Label",
+                    "caption": "For a new update a push message goes to this tile visualization. Empty = no message."
                 },
                 {
                     "type": "CheckBox",
@@ -195,10 +203,14 @@
                 {
                     "type": "NumberSpinner",
                     "name": "UpdateGap",
-                    "caption": "Pause between two devices when updating several (seconds)",
+                    "caption": "Pause between devices (seconds)",
                     "minimum": 5,
                     "maximum": 600,
                     "width": "440px"
+                },
+                {
+                    "type": "Label",
+                    "caption": "Applies when several devices are updated one after another."
                 },
                 {
                     "type": "Label",

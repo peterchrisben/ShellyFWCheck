@@ -4,7 +4,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 30)
+Aktuelle Version: 1.0 (Build 31)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -16,7 +16,7 @@ Aktuelle Version: 1.0 (Build 30)
 
 ## Installation
 
-- **Module Store:** nach „Shelly Firmware-Check“ suchen und installieren. Das Modul steht derzeit im **Beta-Kanal** – Beta-Module müssen dafür in den Store-Einstellungen zugelassen sein.
+- **Module Store:** nach „Shelly Firmware-Check“ suchen und installieren.
 - **oder Modulverwaltung:** Hinzufügen → `https://github.com/peterchrisben/ShellyFWCheck`
 
 ## Einrichtung
@@ -28,9 +28,9 @@ Aktuelle Version: 1.0 (Build 30)
 
 Solange kein Gerät eingetragen ist, zeigt Symcon „Instanz ist inaktiv“ – das ist normal.
 
-**Findet die Suche nicht alle Geräte?** Die Netzwerksuche (mDNS) ist nicht immer vollständig – z. B. bei Geräten, die sich nicht melden, oder wenn Symcon alte Einträge zwischenspeichert. Dann unter „Geräte verwalten“ bei „Adressbereiche durchsuchen“ das **eigene Netz** eintragen (z. B. Von `192.168.1.1`, Bis `254`). Das Modul fragt dann jede Adresse direkt und findet so jeden Shelly ab Gen2.
+**So sucht das Modul:** Es fragt die Netzwerksuche (mDNS) und dazu das **eigene Netz** von Symcon Adresse für Adresse ab (z. B. `192.168.1.1` bis `192.168.1.254`). So werden auch Shellys gefunden, die sich bei der Netzwerksuche nicht melden – das betrifft z. B. manche Plus 2PM. Das dauert ein paar Sekunden. Antwortet ein von der Netzwerksuche gemeldetes Gerät nicht gleich (schwaches WLAN), fragt das Modul noch einmal mit mehr Geduld nach.
 
-**Shellys in einem anderen Netz** (Gäste-, IoT-Netz, Gartenhaus): Die normale Suche findet nur Geräte im Netz von Symcon. Unter „Geräte verwalten“ lassen sich bei „Adressbereiche durchsuchen“ zusätzliche Adressbereiche eintragen, z. B. Von `192.168.20.1`, Bis `192.168.20.254`. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht; auch die Kurzform `192.168.20.0/24` geht. Höchstens 1024 Adressen je Zeile. Symcon muss das andere Netz erreichen können. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.
+**Shellys in einem anderen Netz** (Gäste-, IoT-Netz, Gartenhaus): Die Suche findet nur Geräte im Netz von Symcon. Unter „Geräte verwalten“ lassen sich bei „Weitere Adressbereiche durchsuchen“ zusätzliche Adressbereiche eintragen, z. B. Von `192.168.20.1`, Bis `192.168.20.254`. Bleibt „Bis“ leer, wird das ganze Netz der Adresse durchsucht; auch die Kurzform `192.168.20.0/24` geht. Höchstens 1024 Adressen je Zeile. Symcon muss das andere Netz erreichen können. Gesucht wird nur beim Knopf „Geräte im Netzwerk suchen“.
 
 **Batteriegeräte** (z. B. Shelly H&T): Haken „Batterie“ in der Geräteliste setzen. Das Gerät wird dann als „Schläft“ gezeigt statt als Fehler und zählt nicht bei „Nicht erreichbar“ mit. Batteriegeräte sind nur rund zwei Sekunden wach. In dieser Zeit fragt das Modul sie nach einem Update (der H&T antwortet in unter einer Sekunde). Solange ein Gerät schläft, wird ein Update auch aus Geräten gleichen Modells abgeleitet: Läuft auf einem anderen H&T schon eine neuere Version, wird sie als verfügbar angezeigt.
 
@@ -47,7 +47,7 @@ Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zei
 | Knopf | Was passiert |
 |---|---|
 | Jetzt prüfen | fragt alle aktiven Geräte ab |
-| Geräte im Netzwerk suchen | sucht Shellys per mDNS (und in den zusätzlichen Adressbereichen); neue Geräte und geänderte IP-Adressen werden unter „Geräte verwalten“ eingetragen (wirksam nach „Änderungen übernehmen“) |
+| Geräte im Netzwerk suchen | sucht Shellys per mDNS, im eigenen Netz und in den weiteren Adressbereichen; neue Geräte und geänderte IP-Adressen werden unter „Geräte verwalten“ eingetragen (wirksam nach „Änderungen übernehmen“) |
 | Ausgewählte aktualisieren | startet die Updates für alle Geräte mit Haken in der Spalte „Auswahl“ der Übersicht (gestartet werden nur Geräte mit verfügbarem Update) |
 | Alle Updates starten | startet alle verfügbaren Updates nacheinander, mit Pause dazwischen (Standard 20 Sekunden) |
 
@@ -75,7 +75,7 @@ Status in der Übersicht: Aktuell · Update verfügbar (gelb) · Update läuft o
 |---|---|
 | Updates verfügbar | Anzahl der Geräte mit Update – z. B. als Auslöser für eine Benachrichtigung |
 | Geräte | Anzahl der aktiven Geräte |
-| Nicht erreichbar | Anzahl der Geräte, die bei der letzten Prüfung nicht geantwortet haben |
+| Nicht erreichbar | Anzahl der Geräte, die bei der letzten Prüfung nicht geantwortet haben (wer beim ersten Mal nicht antwortet, wird noch einmal mit mehr Geduld gefragt) |
 | Geräte mit Update | Namen der Geräte mit Update, durch Komma getrennt |
 | Letzte Prüfung | Zeitpunkt der letzten Abfrage |
 | Übersicht | Tabelle aller Geräte für die Visualisierung (abschaltbar) |

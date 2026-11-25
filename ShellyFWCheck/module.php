@@ -18,6 +18,9 @@ class ShellyFWCheck extends IPSModule
     private const MAX_STEPS = 4;            // höchstens so viele Anstöße je Update (mehrstufige Updates)
     private const MAX_CHAIN = 5;            // höchstens so viele Folge-Updates hintereinander
     private const SCAN_MAX = 1024;          // höchstens so viele Adressen je Suchbereich
+    private const OWN_NETS_MAX = 4;         // höchstens so viele eigene Netze (je .1–.254) durchsucht die Suche automatisch
+    private const SLOW_TIMEOUT = 12;        // zweiter Versuch bei Geräten ohne Antwort: Sekunden gesamt …
+    private const SLOW_CONNECT_MS = 8000;   // … und Millisekunden für den Verbindungsaufbau
     private const HISTORY_MAX = 50;         // so viele Einträge behält der Update-Verlauf
     private const CHAIN_WINDOW = 900;          // so lange nach einem Update auf ein Folge-Update warten (Sekunden)
     private const BATTERY_VERIFY_MAX = 86400; // Batteriegeräte: so lange wird auf die Bestätigung beim Aufwachen gewartet
@@ -342,6 +345,23 @@ class ShellyFWCheck extends IPSModule
                 $requests[$this->HostKey($row['Host'])] = ['url' => 'http://' . $row['Host'] . '/shelly', 'timeout' => 5];
             }
             $infos = $this->HttpBatch($requests);
+            // Zweiter Versuch mit mehr Geduld für Netzgeräte ohne Antwort (schwaches WLAN, Gerät gerade beschäftigt).
+            // Nicht für Batteriegeräte (schlafen) und nicht während eines Updates (Neustart ist dann normal).
+            $slow = [];
+            foreach ($rows as $row) {
+                $k = $this->HostKey($row['Host']);
+                if (!$row['Battery'] && ($infos[$k]['code'] ?? 0) === 0 && (int) ($state[$k]['upd_start'] ?? 0) === 0) {
+                    $slow[$k] = ['url' => 'http://' . $row['Host'] . '/shelly', 'timeout' => self::SLOW_TIMEOUT, 'connect_ms' => self::SLOW_CONNECT_MS];
+                }
+            }
+            if (count($slow) > 0) {
+                $this->SendDebug('Abfrage', 'Zweiter Versuch (mehr Geduld): ' . implode(', ', array_keys($slow)), 0);
+                foreach ($this->HttpBatch($slow) as $k => $res) {
+                    if ($res['code'] !== 0) {
+                        $infos[$k] = $res;
+                    }
+                }
+            }
 
             $calls = [];
             $again = [];
@@ -775,26 +795,54 @@ class ShellyFWCheck extends IPSModule
     public function Discover(): int
     {
         $ranges = $this->ScanRanges($rangeErrors);
+        // Eigenes Netz von Symcon immer mit durchsuchen – die Netzwerksuche (mDNS) findet nicht jeden Shelly.
+        // Netze, die schon in einem eingetragenen Bereich stecken, nicht doppelt.
+        $own = [];
+        foreach ($this->OwnNetworks() as [$first, $last]) {
+            $covered = false;
+            foreach ($ranges as [$a, $b]) {
+                $covered = $covered || ($first >= $a && $last <= $b);
+            }
+            if (!$covered) {
+                $own[] = [$first, $last];
+            }
+        }
+        $ownText = implode(', ', array_map(fn (array $r): string => long2ip($r[0] - 1) . '/24', $own));
+        $all = array_merge($own, $ranges);
         $addresses = 0;
-        foreach ($ranges as $r) {
+        foreach ($all as $r) {
             $addresses += $r[1] - $r[0] + 1;
         }
-        $this->ShowResult(count($ranges) > 0 ? $this->T('Searching … (own network and %d further ranges with %d addresses)', count($ranges), $addresses) : $this->T('Searching … (own network)'));
+        if (count($own) > 0) {
+            $this->ShowResult($this->T('Searching … (own network %s%s – %d addresses, takes a few seconds)', $ownText,
+                count($ranges) > 0 ? ' ' . $this->T('and %d further ranges', count($ranges)) : '', $addresses));
+        } else {
+            $this->ShowResult(count($ranges) > 0 ? $this->T('Searching … (own network and %d further ranges with %d addresses)', count($ranges), $addresses) : $this->T('Searching … (own network)'));
+        }
         $mdns = $this->QueryMdns();
-        if ($mdns === null && count($ranges) === 0) {
+        if ($mdns === null && count($all) === 0) {
             $this->ShowResult($this->T('Searching the own network needs the Symcon instance "DNS-SD Control" – it was not found. Please add devices by hand or enter an address range under "Manage devices".')
                 . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
             return 0;
         }
         // Jede Adresse direkt fragen: Die Netzwerksuche (mDNS) liefert auch veraltete Einträge, mehrere Namen
         // oder Adressen für ein Gerät (z. B. LAN und WLAN). Gezählt wird jedes Gerät einmal – nach seiner ID.
-        $ips = array_keys($mdns ?? []);
-        foreach ($ranges as [$first, $last]) {
+        $mdnsIps = array_map('strval', array_keys($mdns ?? []));
+        $ips = $mdnsIps;
+        foreach ($all as [$first, $last]) {
             for ($n = $first; $n <= $last; $n++) {
                 $ips[] = long2ip($n);
             }
         }
-        $devices = $this->ProbeAddresses(array_values(array_unique($ips)), $gen1);
+        $devices = $this->ProbeAddresses(array_values(array_unique($ips)), $gen1, $silent);
+        // Von der Netzwerksuche gemeldet, aber keine Antwort: noch einmal mit mehr Geduld (schwaches WLAN)
+        $retry = array_values(array_intersect($mdnsIps, $silent));
+        if (count($retry) > 0) {
+            foreach ($this->ProbeAddresses($retry, $gen1b, $silent, self::SLOW_TIMEOUT, self::SLOW_CONNECT_MS) as $id => $dev) {
+                $devices[$id] = ['name' => $devices[$id]['name'] ?? $dev['name'], 'ips' => array_values(array_unique(array_merge($devices[$id]['ips'] ?? [], $dev['ips'])))];
+            }
+            $gen1 += $gen1b;
+        }
         $rows = $this->DeviceRows();
         $state = $this->ReadState();
         $byHost = [];
@@ -841,8 +889,10 @@ class ShellyFWCheck extends IPSModule
         if ($gen1 > 0) {
             $text .= ' ' . $this->T('%d Gen1 device(s) skipped.', $gen1);
         }
-        if (count($ranges) === 0) {
-            // Netzwerksuche findet nicht immer alle (Schlafende, Geräte mit abgeschalteter Suche, Cache von Symcon)
+        if (count($own) > 0) {
+            $text .= ' ' . $this->T('Own network %s searched address by address.', $ownText);
+        } elseif (count($ranges) === 0) {
+            // eigenes Netz nicht ermittelbar: Netzwerksuche findet nicht immer alle
             $text .= ' ' . $this->T('A device is missing? Enter your own network as an address range under "Manage devices" – then every address is asked directly.');
         }
         $this->ShowResult($text . ($rangeErrors !== '' ? ' ' . $rangeErrors : ''));
@@ -903,28 +953,85 @@ class ShellyFWCheck extends IPSModule
     }
 
     /**
-     * Jede Adresse der Bereiche kurz nach /shelly fragen; Antwort eines Shelly ab Gen2 = Fund.
-     * @return array<string,string> Geräte-ID => IP-Adresse
+     * Eigene Netze von Symcon (je .1–.254 um die eigene Adresse), nur private Adressen (10.x, 172.16–31.x, 192.168.x),
+     * ohne virtuelle Adapter (Docker, VPN, VM). Höchstens OWN_NETS_MAX Netze.
+     * @return array<int,array{0:int,1:int}>
      */
+    private function OwnNetworks(): array
+    {
+        $out = [];
+        foreach ($this->OwnAddresses() as $ip) {
+            $n = ip2long($ip);
+            if ($n === false) {
+                continue;
+            }
+            $private = ($n & 0xFF000000) === 0x0A000000 || ($n & 0xFFF00000) === 0xAC100000 || ($n & 0xFFFF0000) === 0xC0A80000;
+            if (!$private) {
+                continue;
+            }
+            $net = $n & ~255;
+            $out[$net] = [$net + 1, $net + 254];
+        }
+        $out = array_slice(array_values($out), 0, self::OWN_NETS_MAX);
+        $this->SendDebug('Suche', 'Eigene Netze: ' . (count($out) > 0 ? implode(', ', array_map(fn (array $r): string => long2ip($r[0] - 1) . '/24', $out)) : 'keine ermittelt'), 0);
+        return $out;
+    }
+
+    /** IPv4-Adressen von Symcon (über Sys_GetNetworkInfo; ohne virtuelle Adapter). */
+    protected function OwnAddresses(): array
+    {
+        $ips = [];
+        if (function_exists('Sys_GetNetworkInfo')) {
+            $info = @Sys_GetNetworkInfo();
+            foreach (is_array($info) ? $info : [] as $adapter) {
+                $desc = (string) ($adapter['Description'] ?? '');
+                if (preg_match('/docker|veth|virbr|vmnet|virtualbox|tailscale|zerotier|wireguard|wintun|loopback|\\b(lo|tun\\d*|tap\\d*|wg\\d*)\\b/i', $desc)) {
+                    continue;
+                }
+                $ip = trim((string) ($adapter['IP'] ?? ''));
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                    $ips[] = $ip;
+                }
+            }
+            return $ips;
+        }
+        // ohne Sys_GetNetworkInfo: Adresse, über die Symcon ins Netz geht (UDP „verbinden“ sendet nichts)
+        $fp = @stream_socket_client('udp://8.8.8.8:53', $errno, $errstr, 1);
+        if ($fp !== false) {
+            $name = (string) stream_socket_get_name($fp, false);
+            fclose($fp);
+            $ip = substr($name, 0, (int) strrpos($name, ':'));
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                $ips[] = $ip;
+            }
+        }
+        return $ips;
+    }
+
     /**
      * Adressen direkt nach /shelly fragen (je 128 gleichzeitig). Ergebnis: Shellys ab Gen2 nach Geräte-ID,
-     * mit allen Adressen, unter denen sie geantwortet haben. $gen1 = Anzahl gefundener Gen1-Geräte.
+     * mit allen Adressen, unter denen sie geantwortet haben. $gen1 = Anzahl gefundener Gen1-Geräte,
+     * $silentIps = Adressen ohne Antwort.
      * @return array<string,array{name:string,ips:array<int,string>}>
      */
-    private function ProbeAddresses(array $ips, ?int &$gen1): array
+    private function ProbeAddresses(array $ips, ?int &$gen1, ?array &$silentIps = null, int $timeout = 3, int $connectMs = 1500): array
     {
         $gen1 = 0;
         $found = [];
         $silent = 0;
+        $silentIps = [];
         foreach (array_chunk($ips, 128) as $chunk) {
             $requests = [];
             foreach ($chunk as $ip) {
-                $requests[$ip] = ['url' => 'http://' . $ip . '/shelly', 'timeout' => 3, 'connect_ms' => 1500, 'quiet' => true];
+                $requests[$ip] = ['url' => 'http://' . $ip . '/shelly', 'timeout' => $timeout, 'connect_ms' => $connectMs, 'quiet' => true];
             }
             foreach ($this->HttpBatch($requests) as $ip => $res) {
                 $data = $res['code'] === 200 ? $this->DecodeJson($res['body']) : null;
                 if (!is_array($data)) {
                     $silent++;
+                    if ($res['code'] === 0) {
+                        $silentIps[] = (string) $ip;
+                    }
                     continue;
                 }
                 $id = strtolower((string) ($data['id'] ?? ''));
