@@ -2,6 +2,16 @@
 
 ## Version 1.0
 
+### Build 32 (26.11.2026)
+
+#### Neu
+- Namen für Geräte, die im Shelly selbst keinen sprechenden Namen haben (Forum, RedRaz): Unter „Geräte verwalten“ gibt es die Spalten **„Eigener Name (nur im Modul)“** und **„Symcon-Instanz“**. Ein eigener Name ersetzt den Gerätenamen in Übersicht, Verlauf, Meldungen, Push-Nachricht und Tabelle; bei einer verknüpften Instanz wird deren Name gezeigt (eigener Name vor Instanzname vor Name im Gerät). Bleiben beide leer, gilt wie bisher der Name aus dem Gerät. Die Instanz wird nur gelesen und als Referenz angemeldet.
+- Knopf **„Symcon-Instanz öffnen“** unter der Übersicht: Klick auf den Namen eines Geräts stellt ihn auf die verknüpfte Instanz.
+- `SFW_GetDevices` liefert zusätzlich `deviceName` (Name im Gerät) und `instance` (verknüpfte Instanz).
+
+#### Geändert
+- Spalte „Name“ unter „Geräte verwalten“ heißt jetzt „Name im Gerät“. Hinweis unter der Liste: Der beste Weg bleibt, den Shelly in seiner Weboberfläche zu benennen.
+
 ### Build 31 (25.11.2026)
 
 #### Neu

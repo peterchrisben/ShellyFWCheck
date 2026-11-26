@@ -4,7 +4,7 @@
 
 Firmware-Übersicht und Updates für Shelly-Geräte in Symcon: **eine Instanz zeigt für alle Shellys die installierte und die verfügbare Firmware** und startet Updates auf Knopfdruck – einzeln, für eine Auswahl oder für alle. Alles läuft lokal über die Geräte selbst, ohne Shelly-App und ohne Cloud-Konto.
 
-Aktuelle Version: 1.0 (Build 31)
+Aktuelle Version: 1.0 (Build 32)
 
 **Prüfen verändert nichts. Updates starten nur auf Knopfdruck mit Rückfrage, nie automatisch.**
 
@@ -41,6 +41,12 @@ Solange kein Gerät eingetragen ist, zeigt Symcon „Instanz ist inaktiv“ – 
 **Tipp für mehrere Geräte:** Erst alle vormerken, dann – wer nicht warten will – die Geräte nacheinander per Taste wecken, am besten mit ein paar Sekunden Abstand. Wachen mehrere Geräte kurz hintereinander auf, arbeitet das Modul sie der Reihe nach ab. Nur während der großen Abfrage aller Geräte („Jetzt prüfen“ oder die automatische Prüfung, dauert rund eine halbe Minute) kann ein Gerät verpasst werden; es bleibt dann vorgemerkt und kommt beim nächsten Aufwachen dran.
 
 Hat ein Gerät ein anderes Passwort: unter „Geräte verwalten“ in seiner Zeile den Haken **Eigenes PW** setzen und das Passwort dort eintragen. Der Benutzername ist bei Shelly immer „admin“.
+
+**Namen:** Der beste Weg ist und bleibt, jeden Shelly in seiner Weboberfläche zu benennen (Settings → Device name – ein Klick auf die IP-Adresse in der Übersicht öffnet sie). Dann steht der Name überall gleich: in der Shelly-App, in Symcon und hier. Namen, die nur in der Shelly-App vergeben werden, liegen in der Cloud und sind für das Modul nicht sichtbar. Wer nicht jedes Gerät anfassen will, hat unter „Geräte verwalten“ zwei Spalten, die nur im Modul gelten:
+- **Eigener Name (nur im Modul):** ersetzt den Gerätenamen in Übersicht, Verlauf, Meldungen und Tabelle.
+- **Symcon-Instanz:** die Instanz des Geräts in Symcon (z. B. aus dem Shelly-Modul) auswählen – dann wird ihr Name gezeigt. Ein Klick auf den Namen in der Übersicht stellt den Knopf **„Symcon-Instanz öffnen“** unter der Übersicht auf diese Instanz. Das Modul liest nur den Namen, an der Instanz ändert es nichts.
+
+Reihenfolge: eigener Name vor Instanzname vor Name im Gerät. Bleibt beides leer, gilt der Name aus dem Gerät.
 
 ## Bedienung
 
@@ -90,7 +96,7 @@ SFW_UpdateSelected($id, '["192.168.1.50","192.168.1.51"]'); // Updates für mehr
 SFW_UpdateAll($id);                     // alle verfügbaren Updates nacheinander starten, liefert die Anzahl
 SFW_Discover($id);                      // Gerätesuche (trägt nur ins offene Formular ein)
 SFW_SetAutoUpdate($id, '["192.168.1.50"]', 'stable'); // Auto-Update im Gerät: 'off', 'stable' oder 'beta'
-SFW_GetDevices($id);                    // Stand aller Geräte als JSON
+SFW_GetDevices($id);                    // Stand aller Geräte als JSON (name = angezeigter Name, deviceName = Name im Gerät, instance = verknüpfte Instanz)
 SFW_GetHistory($id);                    // Update-Verlauf als JSON (neueste zuerst); by: module, chain (Folge-Update), external (nicht über das Modul)
 ```
 

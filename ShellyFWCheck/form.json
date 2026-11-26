@@ -48,11 +48,29 @@
                             }
                         },
                         {
-                            "caption": "Name",
+                            "caption": "Name in the device",
                             "name": "Name",
                             "width": "auto",
                             "add": "",
                             "save": false
+                        },
+                        {
+                            "caption": "Own name (module only)",
+                            "name": "OwnName",
+                            "width": "180px",
+                            "add": "",
+                            "edit": {
+                                "type": "ValidationTextBox"
+                            }
+                        },
+                        {
+                            "caption": "Symcon instance",
+                            "name": "Instance",
+                            "width": "200px",
+                            "add": 0,
+                            "edit": {
+                                "type": "SelectInstance"
+                            }
                         },
                         {
                             "caption": "IP address",
@@ -101,6 +119,10 @@
                         }
                     ],
                     "values": []
+                },
+                {
+                    "type": "Label",
+                    "caption": "Names: the best way is to name each Shelly in its web interface (Settings → Device name) – then the name is the same everywhere. Optional, only in this module: an own name, or the Symcon instance whose name is shown (own name before instance name before device name)."
                 },
                 {
                     "type": "Label",
@@ -299,7 +321,8 @@
                     "caption": "Name",
                     "name": "Name",
                     "width": "220px",
-                    "add": ""
+                    "add": "",
+                    "onClick": "IPS_RequestAction($id, 'PickRow', $Status['Host']);"
                 },
                 {
                     "caption": "IP address",
@@ -341,11 +364,19 @@
                 }
             ],
             "values": [],
-            "onEdit": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } IPS_RequestAction($id, 'Select', json_encode($h));"
+            "onEdit": "$h = []; foreach ($Status as $r) { if ($r['Select']) { $h[] = $r['Host']; } } IPS_RequestAction($id, 'Select', json_encode($h));",
+            "onSelectionChanged": "IPS_RequestAction($id, 'PickRow', $Status['Host']);"
+        },
+        {
+            "type": "OpenObjectButton",
+            "name": "OpenInstance",
+            "caption": "Open Symcon instance",
+            "objectID": 0,
+            "enabled": false
         },
         {
             "type": "Label",
-            "caption": "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device. Some updates run in several steps and then take a few minutes."
+            "caption": "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device. Some updates run in several steps and then take a few minutes. A click on a name sets the button \"Open Symcon instance\" to the instance linked to that device."
         },
         {
             "type": "ExpansionPanel",

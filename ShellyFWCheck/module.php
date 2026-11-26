@@ -77,11 +77,14 @@ class ShellyFWCheck extends IPSModule
         }
 
         // Fremde Objekte als Referenz anmelden (Symcon warnt dann, bevor sie gelöscht werden):
-        // gewählte Visualisierung und die Wach-Signale der Batteriegeräte
+        // gewählte Visualisierung, verknüpfte Instanzen und die Wach-Signale der Batteriegeräte
         $visu = $this->ReadPropertyInteger('NotifyVisu');
         $wanted = $visu >= 10000 ? [$visu] : [];
         $wake = [];
         foreach ($this->DeviceRows() as $row) {
+            if ($row['Instance'] >= 10000) {
+                $wanted[] = $row['Instance'];   // verknüpfte Symcon-Instanz (nur der Name wird gelesen)
+            }
             if ($row['Active'] && $row['Battery'] && $row['WakeVar'] >= 10000) {
                 $wanted[] = $row['WakeVar'];
                 $wake[] = $row['WakeVar'];
@@ -267,6 +270,9 @@ class ShellyFWCheck extends IPSModule
             case 'Discover':
                 $this->Discover();
                 break;
+            case 'PickRow':
+                $this->PickRow((string) $Value);
+                break;
             default:
                 throw new Exception('Invalid ident: ' . $Ident);
         }
@@ -293,6 +299,20 @@ class ShellyFWCheck extends IPSModule
         $this->FillForm($form['elements'], $fill);
         $this->FillForm($form['actions'], $fill);
         return json_encode($form);
+    }
+
+    /** Zeile der Übersicht angeklickt: Knopf „Instanz öffnen“ auf die verknüpfte Symcon-Instanz stellen. */
+    private function PickRow(string $host): void
+    {
+        $inst = 0;
+        foreach ($this->DeviceRows() as $row) {
+            if ($this->HostKey($row['Host']) === $this->HostKey($host)) {
+                $inst = $row['Instance'] >= 10000 && IPS_InstanceExists($row['Instance']) ? $row['Instance'] : 0;
+            }
+        }
+        $this->UpdateFormField('OpenInstance', 'objectID', $inst);
+        $this->UpdateFormField('OpenInstance', 'enabled', $inst > 0);
+        $this->UpdateFormField('OpenInstance', 'caption', $inst > 0 ? $this->T('Open instance %d', $inst) : $this->T('No Symcon instance linked'));
     }
 
     /** Installierte Version des Moduls, z. B. „Shelly Firmware-Check 1.0 (Build 25)“ – leer, falls Symcon sie nicht liefert. */
@@ -387,7 +407,8 @@ class ShellyFWCheck extends IPSModule
                 $e['err'] = '';
                 $e['msg'] = '';
                 if ((int) ($data['gen'] ?? 1) < 2) {
-                    $e['name'] = (string) ($data['type'] ?? 'Shelly Gen1');
+                    $e['devname'] = (string) ($data['type'] ?? 'Shelly Gen1');
+                    $e['name'] = $this->ShownName($row, $e['devname']);
                     $e['ver'] = (string) ($data['fw'] ?? '');
                     $e['gen'] = 1;
                     $e['err'] = 'gen1';
@@ -397,7 +418,8 @@ class ShellyFWCheck extends IPSModule
                 }
                 $e['id'] = (string) ($data['id'] ?? '');
                 $name = trim((string) ($data['name'] ?? ''));
-                $e['name'] = $name !== '' ? $name : $e['id'];
+                $e['devname'] = $name !== '' ? $name : $e['id'];
+                $e['name'] = $this->ShownName($row, $e['devname']);
                 $e['model'] = (string) ($data['app'] ?? ($data['model'] ?? ''));
                 $e['gen'] = (int) $data['gen'];
                 $e['ver'] = (string) ($data['ver'] ?? '');
@@ -875,7 +897,7 @@ class ShellyFWCheck extends IPSModule
                 continue;
             }
             $byHost[$this->HostKey($ip)] = count($list);
-            $list[] = ['Active' => true, 'Name' => $dev['name'], 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'Battery' => false, 'WakeVar' => 0, 'rowColor' => '#C0C0FF'];
+            $list[] = ['Active' => true, 'Name' => $dev['name'], 'OwnName' => '', 'Instance' => 0, 'Host' => $ip, 'OwnPassword' => false, 'Password' => '', 'Battery' => false, 'WakeVar' => 0, 'rowColor' => '#C0C0FF'];
             $new++;
         }
         if ($new + $moved > 0) {
@@ -1095,6 +1117,8 @@ class ShellyFWCheck extends IPSModule
                 'host'      => $row['Host'],
                 'active'    => $row['Active'],
                 'name'      => $e['name'],
+                'deviceName' => $e['devname'],
+                'instance'  => $row['Instance'] >= 10000 && IPS_InstanceExists($row['Instance']) ? $row['Instance'] : 0,
                 'id'        => $e['id'],
                 'model'     => $e['model'],
                 'gen'       => $e['gen'],
@@ -1695,7 +1719,9 @@ class ShellyFWCheck extends IPSModule
                 'OwnPassword' => (bool) ($r['OwnPassword'] ?? false),
                 'Password'    => (string) ($r['Password'] ?? ''),
                 'Battery'     => (bool) ($r['Battery'] ?? false),
-                'WakeVar'     => (int) ($r['WakeVar'] ?? 0)
+                'WakeVar'     => (int) ($r['WakeVar'] ?? 0),
+                'OwnName'     => trim((string) ($r['OwnName'] ?? '')),
+                'Instance'    => (int) ($r['Instance'] ?? 0)
             ];
         }
         return array_values($rows);
@@ -1723,13 +1749,34 @@ class ShellyFWCheck extends IPSModule
         return $row['OwnPassword'] ? $row['Password'] : $this->ReadPropertyString('MasterPassword');
     }
 
+    /**
+     * Angezeigter Name: eigener Name (nur im Modul) vor dem Namen der verknüpften Symcon-Instanz vor dem Namen aus dem Gerät.
+     * Der beste Weg bleibt, das Gerät in seiner Weboberfläche zu benennen – dann ist der Name überall gleich.
+     */
+    private function ShownName(?array $row, string $devName): string
+    {
+        if ($row !== null) {
+            if ($row['OwnName'] !== '') {
+                return $row['OwnName'];
+            }
+            if ($row['Instance'] >= 10000 && IPS_InstanceExists($row['Instance'])) {
+                $name = trim(IPS_GetName($row['Instance']));
+                if ($name !== '') {
+                    return $name;
+                }
+            }
+        }
+        return $devName;
+    }
+
     private function EmptyEntry(): array
     {
         return ['id' => '', 'name' => '', 'model' => '', 'gen' => 0, 'ver' => '', 'avail' => '', 'auth' => false,
             'online' => false, 'seen' => 0, 'checked' => 0, 'err' => '', 'msg' => '', 'note' => '',
             'auto' => '', 'auto_spec' => '', 'auto_jobs' => [],
             'slot' => -1, 'upd_start' => 0, 'upd_from' => '', 'upd_target' => '', 'upd_slot' => -1, 'upd_tries' => 0, 'upd_step' => 0,
-            'upd_chain' => 0, 'upd_ext' => false, 'battery' => false, 'pending' => false, 'sure' => false, 'chain_until' => 0];
+            'upd_chain' => 0, 'upd_ext' => false, 'battery' => false, 'pending' => false, 'sure' => false, 'chain_until' => 0,
+            'devname' => ''];
     }
 
     private function ReadState(): array
@@ -1738,8 +1785,18 @@ class ShellyFWCheck extends IPSModule
         if (!is_array($state)) {
             return [];
         }
+        $rows = [];
+        foreach ($this->DeviceRows() as $row) {
+            $rows[$this->HostKey($row['Host'])] = $row;
+        }
         foreach ($state as $k => $e) {
-            $state[$k] = array_merge($this->EmptyEntry(), is_array($e) ? $e : []);
+            $e = is_array($e) ? $e : [];
+            if (!array_key_exists('devname', $e)) {
+                $e['devname'] = (string) ($e['name'] ?? '');   // Zustand vor Build 32: „name“ war der Gerätename
+            }
+            $e = array_merge($this->EmptyEntry(), $e);
+            $e['name'] = $this->ShownName($rows[(string) $k] ?? null, $e['devname']);
+            $state[$k] = $e;
         }
         return $state;
     }
@@ -1904,7 +1961,9 @@ class ShellyFWCheck extends IPSModule
             $e = $state[$this->HostKey($row['Host'])] ?? $this->EmptyEntry();
             $list[] = [
                 'Active'      => $row['Active'],
-                'Name'        => $e['name'],
+                'Name'        => $e['devname'],
+                'OwnName'     => $row['OwnName'],
+                'Instance'    => $row['Instance'],
                 'Host'        => $row['Host'],
                 'OwnPassword' => $row['OwnPassword'],
                 'Password'    => $row['Password'],

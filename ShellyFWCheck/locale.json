@@ -151,7 +151,6 @@
             "%d Gen1 device(s) skipped.": "%d Gen1-Gerät(e) ausgelassen.",
             "A device is missing? Enter your own network as an address range under \"Manage devices\" – then every address is asked directly.": "Fehlt ein Gerät? Unter „Geräte verwalten“ das eigene Netz als Adressbereich eintragen – dann wird jede Adresse direkt gefragt.",
             "After an update started here, continue right away until the latest version is installed (follow-up updates)": "Nach einem hier gestarteten Update gleich weiter, bis die neueste Version installiert ist (Folge-Updates)",
-            "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device. Some updates run in several steps and then take a few minutes.": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts. Manche Updates laufen in mehreren Schritten und dauern dann einige Minuten.",
             "Updated (from %s)": "Aktualisiert (von %s)",
             "Not confirmed – please start again": "Nicht bestätigt – bitte erneut starten",
             "Not confirmed – device offline": "Nicht bestätigt – Gerät offline",
@@ -181,7 +180,15 @@
             "Push message to visualization": "Push-Nachricht an Visualisierung",
             "For a new update a push message goes to this tile visualization. Empty = no message.": "Bei einem neuen Update geht eine Push-Nachricht an diese Kachel-Visualisierung. Leer = keine Nachricht.",
             "Pause between devices (seconds)": "Pause zwischen Geräten (Sekunden)",
-            "Applies when several devices are updated one after another.": "Gilt, wenn mehrere Geräte nacheinander aktualisiert werden."
+            "Applies when several devices are updated one after another.": "Gilt, wenn mehrere Geräte nacheinander aktualisiert werden.",
+            "Name in the device": "Name im Gerät",
+            "Own name (module only)": "Eigener Name (nur im Modul)",
+            "Symcon instance": "Symcon-Instanz",
+            "Names: the best way is to name each Shelly in its web interface (Settings → Device name) – then the name is the same everywhere. Optional, only in this module: an own name, or the Symcon instance whose name is shown (own name before instance name before device name).": "Namen: Am besten jeden Shelly in seiner Weboberfläche benennen (Settings → Device name) – dann ist der Name überall gleich. Optional, nur in diesem Modul: ein eigener Name oder die Symcon-Instanz, deren Name angezeigt wird (eigener Name vor Instanzname vor Gerätename).",
+            "Open Symcon instance": "Symcon-Instanz öffnen",
+            "Open instance %d": "Instanz %d öffnen",
+            "No Symcon instance linked": "Keine Symcon-Instanz verknüpft",
+            "Tick the \"Select\" column, then press the matching button above. Scheduled battery devices (blue) keep their tick – unticking cancels the scheduled update right away. A click on the IP address opens the web interface of the device. Some updates run in several steps and then take a few minutes. A click on a name sets the button \"Open Symcon instance\" to the instance linked to that device.": "Haken in der Spalte „Auswahl“ setzen, dann oben den passenden Knopf drücken. Vorgemerkte Batteriegeräte (blau) behalten ihren Haken – herausnehmen hebt die Vormerkung sofort auf. Ein Klick auf die IP-Adresse öffnet die Weboberfläche des Geräts. Manche Updates laufen in mehreren Schritten und dauern dann einige Minuten. Ein Klick auf einen Namen stellt den Knopf „Symcon-Instanz öffnen“ auf die mit dem Gerät verknüpfte Instanz."
         }
     }
 }

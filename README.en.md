@@ -4,7 +4,7 @@
 
 Firmware overview and updates for Shelly devices in Symcon: **one instance shows the installed and the available firmware of all your Shellys** and starts updates at the push of a button – for a single device, a selection or all of them. Everything runs locally via the devices themselves, without the Shelly app and without a cloud account.
 
-Current version: 1.0 (Build 31)
+Current version: 1.0 (Build 32)
 
 **Checking changes nothing. Updates only start when you press a button and confirm, never on their own.**
 
@@ -41,6 +41,12 @@ As long as no device is entered, Symcon shows "Instance is inactive" – that is
 **Tip for several devices:** first schedule all of them, then – if you do not want to wait – wake the devices one after another by button, ideally a few seconds apart. If several devices wake up shortly after each other, the module handles them in turn. Only during the big check of all devices ("Check now" or the automatic check, takes about half a minute) a device can be missed; it then stays scheduled and is handled when it next wakes up.
 
 If a device has a different password: under "Manage devices" tick **Own PW** in its row and enter the password there. The user name is always "admin" on Shelly devices.
+
+**Names:** the best way is and remains to name each Shelly in its web interface (Settings → Device name – a click on the IP address in the overview opens it). Then the name is the same everywhere: in the Shelly app, in Symcon and here. Names that are only set in the Shelly app are stored in the cloud and are not visible to the module. If you do not want to touch every device, "Manage devices" has two columns that only apply in this module:
+- **Own name (module only):** replaces the device name in the overview, history, messages and table.
+- **Symcon instance:** select the device's instance in Symcon (e.g. from the Shelly module) – then its name is shown. A click on the name in the overview sets the button **"Open Symcon instance"** below the overview to this instance. The module only reads the name, it does not change anything in the instance.
+
+Order: own name before instance name before name in the device. If both are empty, the name from the device is used.
 
 ## Operation
 
@@ -92,7 +98,7 @@ SFW_UpdateSelected($id, '["192.168.1.50","192.168.1.51"]'); // start updates for
 SFW_UpdateAll($id);                     // start all available updates one after another, returns the number
 SFW_Discover($id);                      // device search (only fills the open form)
 SFW_SetAutoUpdate($id, '["192.168.1.50"]', 'stable'); // auto update in the device: 'off', 'stable' or 'beta'
-SFW_GetDevices($id);                    // state of all devices as JSON
+SFW_GetDevices($id);                    // state of all devices as JSON (name = shown name, deviceName = name in the device, instance = linked instance)
 SFW_GetHistory($id);                    // update history as JSON (newest first); by: module, chain (follow-up update), external (not via the module)
 ```
 
